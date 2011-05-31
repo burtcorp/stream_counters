@@ -4,6 +4,9 @@ module StreamCounters
   class Counters
     def initialize(config, options={})
       @config = config
+      @value_filters = options.fetch(:value_filters, {})
+      @identity_filter = proc { |x| x }
+      @metric_types = {}
       @specials = options.fetch(:specials, [])
       reset
     end
@@ -16,11 +19,7 @@ module StreamCounters
         counters_for_dim = (counters_for_key[dimension] ||= {})
         counters_for_seg = (counters_for_dim[segment_values] ||= default_counters(dimension))
         dimension.metrics.each do |metric, message|
-          value = case metric_type(message)
-                  when :predicate then item.send(message) ? 1 : 0
-                  when :numeric   then item.send(message)
-                  end
-          counters_for_seg[metric] += value unless value < 0
+          counters_for_seg[metric] += calculate_value(item, message)
         end
         @specials.each do |special|
           special.calculate(counters_for_seg, item)
@@ -40,18 +39,17 @@ module StreamCounters
       @counters[keys][dimension]
     end
     
-    def each
+    def each(&block)
       @counters.keys.each do |keys|
         counters_for_keys = @counters[keys]
         counters_for_keys.keys.each do |dimension|
           counters_for_dims = counters_for_keys[dimension]
           counters_for_dims.keys.each do |segment|
-            yield(
-              :keys => Hash[@config.main_keys.zip(keys)], 
-              :dimension => dimension, 
-              :segments => Hash[dimension.all_keys.zip(segment)],
-              :metrics => counters_for_dims[segment]
-            )
+            data = Hash[@config.main_keys.zip(keys) + dimension.all_keys.zip(segment)].merge!(counters_for_dims[segment])
+            case block.arity
+            when 1 then yield data
+            else        yield data, dimension
+            end
           end
         end
       end
@@ -61,15 +59,16 @@ module StreamCounters
       @counters.size
     end
     
-  private
+  protected
   
-    def metric_type(metric)
-      @cache ||= begin
-        all_metrics = @config.dimensions.reduce({}) { |acc, d| acc.merge(d.metrics) }
-        Hash[all_metrics.map { |metric_name, message| [message, /\?$/ === message ? :predicate : :numeric] }]
-      end
-      @cache[metric]
+    def calculate_value(item, message)
+      type = @metric_types[message]
+      value = item.send(message)
+      filter = @value_filters.fetch(type, @identity_filter)
+      filter.call(value)
     end
+    
+  private
   
     def default_counters(dimension)
       @specials.reduce(@metrics_counters[dimension].dup) do |counters, special|

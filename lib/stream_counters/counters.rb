@@ -4,10 +4,10 @@ module StreamCounters
   class Counters
     def initialize(config, options={})
       @config = config
-      @value_filters = options.fetch(:value_filters, {})
-      @identity_filter = proc { |x| x }
-      @metric_types = {}
       @specials = options.fetch(:specials, [])
+      @metric_types = options.fetch(:types, {})
+      @value_filters = options.fetch(:filters, {})
+      @identity_filter = proc { |x| x }
       reset
     end
     

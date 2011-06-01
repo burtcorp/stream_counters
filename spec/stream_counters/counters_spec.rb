@@ -83,6 +83,22 @@ module StreamCounters
           ['world'] => {:met1s => 0, :met2s => 1, :xor => 1}
         }
       end
+      
+      it 'can be configured to ' do
+        counters = Counters.new(@config1, :types => {:met2 => :percent}, :filters => {:percent => lambda { |x| x/100.0 }})
+        item1 = stub(:master => 'first', :dim1 => 'hello', :dim2 => 'foo', :met1 => 1, :met2 =>  3)
+        item2 = stub(:master => 'first', :dim1 => 'world', :dim2 => 'bar', :met1 => 4, :met2 => 99)
+        item3 = stub(:master => 'first', :dim1 => 'hello', :dim2 => 'bar', :met1 => 6, :met2 =>  1)
+        item4 = stub(:master => 'first', :dim1 => 'hello', :dim2 => 'baz', :met1 => 1, :met2 => 45)
+        counters.handle_item(item1)
+        counters.handle_item(item2)
+        counters.handle_item(item3)
+        counters.handle_item(item4)
+        counters.get(['first'], @config1.find_dimension(:dim1)).should == {
+          ['hello'] => {:met1s => 8, :met2s => 0.49},
+          ['world'] => {:met1s => 4, :met2s => 0.99}
+        }
+      end
     end
   
     describe '#each' do

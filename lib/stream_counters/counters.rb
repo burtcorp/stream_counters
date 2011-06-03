@@ -5,7 +5,6 @@ module StreamCounters
     def initialize(config, options={})
       @config = config
       @specials = options.fetch(:specials, [])
-      @metric_types = options.fetch(:types, {})
       @value_filters = options.fetch(:filters, {})
       @identity_filter = proc { |x| x }
       reset
@@ -62,9 +61,8 @@ module StreamCounters
   protected
   
     def calculate_value(item, metric)
-      type = @metric_types[metric.message]
       value = item.send(metric.message)
-      filter = @value_filters.fetch(type, @identity_filter)
+      filter = @value_filters.fetch(metric.type, @identity_filter)
       filter.call(value)
     end
     

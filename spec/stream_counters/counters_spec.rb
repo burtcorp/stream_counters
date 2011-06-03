@@ -100,8 +100,11 @@ module StreamCounters
         }
       end
       
-      it 'can be configured to ' do
-        counters = Counters.new(@config1, :types => {:another_number => :percent}, :filters => {:percent => lambda { |x| x/100.0 }})
+      it 'can be configured to filter certain metrics with custom filters' do
+        @config1 = @config1.merge do
+          metric :another_sum, :another_number, :type => :percent
+        end
+        counters = Counters.new(@config1, :filters => {:percent => lambda { |x| x/100.0 }})
         item1 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'foo', :some_count => 1, :another_number =>  3)
         item2 = Item.new(:xyz => 'first', :abc => 'world', :def => 'bar', :some_count => 4, :another_number => 99)
         item3 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'bar', :some_count => 6, :another_number =>  1)

@@ -18,8 +18,8 @@ module StreamCounters
         counters_for_key = (@counters[keys] ||= {})
         counters_for_dim = (counters_for_key[dimension] ||= {})
         counters_for_seg = (counters_for_dim[segment_values] ||= default_counters(dimension))
-        dimension.metrics.each do |metric, message|
-          counters_for_seg[metric] += calculate_value(item, message)
+        dimension.metrics.each do |metric_name, metric|
+          counters_for_seg[metric_name] += calculate_value(item, metric)
         end
         @specials.each do |special|
           special.calculate(counters_for_seg, item)
@@ -61,9 +61,9 @@ module StreamCounters
     
   protected
   
-    def calculate_value(item, message)
-      type = @metric_types[message]
-      value = item.send(message)
+    def calculate_value(item, metric)
+      type = @metric_types[metric.message]
+      value = item.send(metric.message)
       filter = @value_filters.fetch(type, @identity_filter)
       filter.call(value)
     end

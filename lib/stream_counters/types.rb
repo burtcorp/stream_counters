@@ -66,4 +66,21 @@ module StreamCounters
       @hash ||= (@meta + @metrics.keys + @metrics.values).reduce(super) { |h, p| ((h + p.hash) * 31) % (2**31 - 1) }
     end
   end
+  
+  class Metric
+    attr_reader :name, :message
+    
+    def initialize(name, message)
+      @name, @message = name, message
+    end
+    
+    def eql?(other)
+      self.name == other.name && self.message == other.message
+    end
+    alias_method :==, :eql?
+    
+    def hash
+      @hash ||= @name.hash * 31 + @message.hash
+    end
+  end
 end

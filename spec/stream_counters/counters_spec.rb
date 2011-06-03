@@ -25,18 +25,21 @@ module StreamCounters
         main_keys :xyz
         dimension :abc
         dimension :def
-        default_metrics :some_sum => :some_count, :another_sum => :another_number
+        metric :some_sum, :some_count
+        metric :another_sum, :another_number
       end
       @config2 = counters do
         main_keys :xyz
         dimension :abc
         dimension :def, :ghi
-        default_metrics :some_sum => :some_count, :another_sum => :another_number
+        metric :some_sum, :some_count
+        metric :another_sum, :another_number
       end
       @config3 = counters do
         main_keys :xyz
         dimension :abc
-        default_metrics :some_sum => :some_count, :another_sum => :another_number
+        metric :some_sum, :some_count
+        metric :another_sum, :another_number
       end
     end
     

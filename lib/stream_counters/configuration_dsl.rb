@@ -11,10 +11,24 @@ module StreamCounters
       cc.build!
     end
     
+  private
+    
+    module Metrics
+      def metric(name, message)
+        @metrics ||= {}
+        @metrics[name] = Metric.new(name, message)
+      end
+      
+      def metrics
+        @metrics || {}
+      end
+    end
+    
     class ConfigurationContext
+      include Metrics
+      
       def initialize
         @dimensions = []
-        @default_metrics = {}
         @main_keys = []
         @sort_keys = []
       end
@@ -25,10 +39,6 @@ module StreamCounters
       
       def sort_keys(*args)
         @sort_keys = args
-      end
-      
-      def default_metrics(hash)
-        @default_metrics = hash
       end
       
       def dimension(*args, &block)
@@ -47,8 +57,7 @@ module StreamCounters
         dimensions = @dimensions.map do |d|
           d = d.dup
           options = d.pop
-          options[:meta] = options[:meta]
-          options[:metrics] = @default_metrics.merge(options[:metrics])
+          options[:metrics] = metrics.merge(options[:metrics])
           d.sort!
           d << options
           Dimension.new(*d)
@@ -62,6 +71,8 @@ module StreamCounters
     end
     
     class DimensionContext
+      include Metrics
+      
       def initialize
         @meta = []
         @metrics = {}
@@ -71,13 +82,6 @@ module StreamCounters
         if args.empty?
         then @meta
         else @meta = args
-        end
-      end
-      
-      def metrics(hash=nil)
-        if hash
-        then @metrics = hash
-        else @metrics
         end
       end
     end

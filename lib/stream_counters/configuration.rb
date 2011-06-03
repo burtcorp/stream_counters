@@ -14,9 +14,5 @@ module StreamCounters
     def find_dimension(*keys)
       @dimensions.find { |d| d.keys == keys }
     end
-    
-    def merge(&block)
-      ConfigurationDsl.counters(self, &block)
-    end
   end
 end

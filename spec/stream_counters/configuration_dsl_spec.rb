@@ -84,6 +84,7 @@ module StreamCounters
           dimension :dim1
           dimension :dim2
           metric :metric1
+          metric :metric2
         end.merge do
           # overrides old main keys
           main_keys :key2
@@ -93,8 +94,10 @@ module StreamCounters
           end
           # adds a new dimension
           dimension :dim3
+          # overrides a metric
+          metric :metric1, :type => :special
           # adds a metric to all dimensions, old and new
-          metric :metric2
+          metric :metric3
         end
       end
       
@@ -114,12 +117,14 @@ module StreamCounters
       
       it 'adds new metrics to all dimensions' do
         subject.find_dimension(:dim1).metrics.should == {
-          :metric1 => Metric.new(:metric1),
-          :metric2 => Metric.new(:metric2)
+          :metric1 => Metric.new(:metric1, :metric1, :special),
+          :metric2 => Metric.new(:metric2),
+          :metric3 => Metric.new(:metric3)
         }
         subject.find_dimension(:dim3).metrics.should == {
-          :metric1 => Metric.new(:metric1),
-          :metric2 => Metric.new(:metric2)
+          :metric1 => Metric.new(:metric1, :metric1, :special),
+          :metric2 => Metric.new(:metric2),
+          :metric3 => Metric.new(:metric3)
         }
       end
     end

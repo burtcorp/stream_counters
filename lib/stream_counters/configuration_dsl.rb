@@ -5,7 +5,7 @@ module StreamCounters
   module ConfigurationDsl
     extend self
     
-    def counters(prototype=nil, &block)
+    def configuration(prototype=nil, &block)
       cc = DslSupport::ConfigurationContext.new(prototype)
       cc.instance_eval(&block)
       c = cc.build!
@@ -13,11 +13,9 @@ module StreamCounters
       c
     end
     
-  private
-    
     module ConfigurationMerge
       def merge(&block)
-        ConfigurationDsl.counters(self, &block)
+        ConfigurationDsl.configuration(self, &block)
       end
     end
     
@@ -92,11 +90,15 @@ module StreamCounters
             acc[d] = Dimension.new(*d, options)
             acc
           end
-          Configuration.new(
+          new_configuration(
             Keys.new(*@main_keys),
             metrics,
             dimensions.values
           )
+        end
+        
+        def new_configuration(keys, metrics, dimensions)
+          Configuration.new(keys, metrics, dimensions)
         end
       end
     

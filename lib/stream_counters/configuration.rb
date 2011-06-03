@@ -14,5 +14,9 @@ module StreamCounters
     def find_dimension(*keys)
       @dimensions.find { |d| d.keys == keys }
     end
+    
+    def create_counters(options={})
+      Counters.new(self, options)
+    end
   end
 end

@@ -21,21 +21,21 @@ module StreamCounters
     include ConfigurationDsl
     
     before do
-      @config1 = counters do
+      @config1 = configuration do
         main_keys :xyz
         dimension :abc
         dimension :def
         metric :some_sum, :some_count
         metric :another_sum, :another_number
       end
-      @config2 = counters do
+      @config2 = configuration do
         main_keys :xyz
         dimension :abc
         dimension :def, :ghi
         metric :some_sum, :some_count
         metric :another_sum, :another_number
       end
-      @config3 = counters do
+      @config3 = configuration do
         main_keys :xyz
         dimension :abc
         metric :some_sum, :some_count

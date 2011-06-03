@@ -9,7 +9,7 @@ module StreamCounters
     
     context 'basic configuration' do
       subject do
-        counters do
+        configuration do
           main_keys :main_key_1, :main_key_2, :main_key_3
 
           # single property dimensions
@@ -45,7 +45,7 @@ module StreamCounters
       end
       
       it 'sorts the dimension property names in alphabetical order' do
-        config = ConfigurationDsl.counters do
+        config = ConfigurationDsl.configuration do
           main_keys :x
           dimension :b, :a
         end
@@ -79,7 +79,7 @@ module StreamCounters
   
     context 'merging' do
       subject do
-        counters do
+        configuration do
           main_keys :key1
           dimension :dim1
           dimension :dim2

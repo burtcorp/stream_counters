@@ -78,8 +78,8 @@ module StreamCounters
     
     attr_reader :name, :message, :type
     
-    def initialize(name, message, type=DEFAULT_TYPE)
-      @name, @message, @type = name, message, type
+    def initialize(name, message=nil, type=DEFAULT_TYPE)
+      @name, @message, @type = name, message || name, type
     end
     
     def eql?(other)

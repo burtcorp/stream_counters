@@ -5,9 +5,11 @@ require_relative '../spec_helper'
 
 module StreamCounters
   describe ConfigurationDsl do
-    context 'creating a simple counting configuration' do
+    include ConfigurationDsl
+    
+    context 'basic configuration' do
       subject do
-        ConfigurationDsl.counters do
+        counters do
           main_keys :main_key_1, :main_key_2, :main_key_3
 
           # single property dimensions
@@ -71,6 +73,53 @@ module StreamCounters
           :metric_2s => Metric.new(:metric_2s, :metric_2),
           :metric_3s => Metric.new(:metric_3s, :metric_3?),
           :metric_x => Metric.new(:metric_x, :metric_x)
+        }
+      end
+    end
+  
+    context 'merging' do
+      subject do
+        counters do
+          main_keys :key1
+          dimension :dim1
+          dimension :dim2
+          metric :metric1
+        end.merge do
+          # overrides old main keys
+          main_keys :key2
+          # overrides old dimension
+          dimension :dim2 do
+            meta :test
+          end
+          # adds a new dimension
+          dimension :dim3
+          # adds a metric to all dimensions, old and new
+          metric :metric2
+        end
+      end
+      
+      it 'overrides main_keys' do
+        subject.main_keys.should == [:key2]
+      end
+      
+      it 'contains the union of the dimensions' do
+        subject.find_dimension(:dim1).should_not be_nil
+        subject.find_dimension(:dim2).should_not be_nil
+        subject.find_dimension(:dim3).should_not be_nil
+      end
+      
+      it 'overrides dimensions with the same name' do
+        subject.find_dimension(:dim2).meta.should == [:test]
+      end
+      
+      it 'adds new metrics to all dimensions' do
+        subject.find_dimension(:dim1).metrics.should == {
+          :metric1 => Metric.new(:metric1),
+          :metric2 => Metric.new(:metric2)
+        }
+        subject.find_dimension(:dim3).metrics.should == {
+          :metric1 => Metric.new(:metric1),
+          :metric2 => Metric.new(:metric2)
         }
       end
     end

@@ -5,8 +5,8 @@ module StreamCounters
   module ConfigurationDsl
     extend self
     
-    def counters(&block)
-      cc = ConfigurationContext.new
+    def counters(prototype=nil, &block)
+      cc = ConfigurationContext.new(prototype)
       cc.instance_eval(&block)
       cc.build!
     end
@@ -43,9 +43,11 @@ module StreamCounters
     class ConfigurationContext
       include Metrics
       
-      def initialize
-        @dimensions = []
-        @main_keys = []
+      def initialize(prototype)
+        @prototype = prototype
+        @dimensions = if @prototype then @prototype.dimensions.map { |d| [*d.keys, :meta => d.meta, :metrics => d.metrics]} else [] end
+        @main_keys = if @prototype then @prototype.main_keys.to_a else [] end
+        @metrics = if @prototype then @prototype.metrics.dup else {} end
       end
       
       def main_keys(*args)
@@ -65,17 +67,19 @@ module StreamCounters
       end
       
       def build!
-        dimensions = @dimensions.map do |d|
+        dimensions = @dimensions.reduce({}) do |acc, d|
           d = d.dup
           options = d.pop
+          keys = d
           options[:metrics] = metrics.merge(options[:metrics])
           d.sort!
-          d << options
-          Dimension.new(*d)
+          acc[d] = Dimension.new(*d, options)
+          acc
         end
         Configuration.new(
           Keys.new(*@main_keys),
-          dimensions
+          metrics,
+          dimensions.values
         )
       end
     end
@@ -85,7 +89,6 @@ module StreamCounters
       
       def initialize
         @meta = []
-        @metrics = {}
       end
       
       def meta(*args)

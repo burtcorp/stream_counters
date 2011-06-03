@@ -3,17 +3,20 @@
 
 module StreamCounters
   class Configuration
-    attr_reader :main_keys, :dimensions
+    attr_reader :main_keys, :metrics, :dimensions
     
-    def initialize(main_keys, dimensions)
+    def initialize(main_keys, metrics, dimensions)
       @main_keys = main_keys
+      @metrics = metrics
       @dimensions = dimensions
     end
     
     def find_dimension(*keys)
-      @dimensions.find do |d|
-        d.keys == keys
-      end
+      @dimensions.find { |d| d.keys == keys }
+    end
+    
+    def merge(&block)
+      ConfigurationDsl.counters(self, &block)
     end
   end
 end

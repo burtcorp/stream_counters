@@ -40,6 +40,10 @@ module StreamCounters
       @elements
     end
     alias_method :to_a, :to_ary
+    
+    def to_s
+      @s ||= %|#{self.class.name.split(':').last}([#{@elements.map(&:inspect).join(', ')}])|
+    end
   end
   
   class Keys < ImmutableList
@@ -71,6 +75,10 @@ module StreamCounters
     def hash
       @hash ||= HashCalculator.hash(@meta + @metrics.keys + @metrics.values)
     end
+    
+    def to_s
+      @s ||= %|#{self.class.name.split(':').last}(keys: [#{keys.map(&:inspect).join(', ')}], meta: [#{meta.map(&:inspect).join(', ')}], metrics: [#{metrics.values.map(&:inspect).join(', ')}])|
+    end
   end
   
   class Metric
@@ -89,6 +97,10 @@ module StreamCounters
     
     def hash
       @hash ||= HashCalculator.hash(@name, @message, @type)
+    end
+    
+    def to_s
+      @s ||= %|#{self.class.name.split(':').last}(name: #{name.inspect}, message: #{message.inspect}, type: #{type.inspect})|
     end
   end
 end

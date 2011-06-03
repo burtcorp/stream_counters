@@ -30,15 +30,10 @@ module StreamCounters
       def initialize
         @dimensions = []
         @main_keys = []
-        @sort_keys = []
       end
       
       def main_keys(*args)
         @main_keys = args
-      end
-      
-      def sort_keys(*args)
-        @sort_keys = args
       end
       
       def dimension(*args, &block)
@@ -64,7 +59,6 @@ module StreamCounters
         end
         Configuration.new(
           Keys.new(*@main_keys),
-          Keys.new(*@sort_keys),
           dimensions
         )
       end

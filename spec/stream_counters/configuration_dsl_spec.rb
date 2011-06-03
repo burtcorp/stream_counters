@@ -9,7 +9,6 @@ module StreamCounters
       subject do
         ConfigurationDsl.counters do
           main_keys :main_key_1, :main_key_2, :main_key_3
-          sort_keys :main_key_2
           dimension :dimension_1
           dimension :dimension_2
           dimension :dimension_3 do
@@ -25,11 +24,7 @@ module StreamCounters
       it 'has the right main keys' do
         subject.main_keys.should == [:main_key_1, :main_key_2, :main_key_3]
       end
-      
-      it 'has the right sort key' do
-        subject.sort_keys.should == [:main_key_2]
-      end
-      
+
       it 'captures dimensions (without meta)' do
         subject.find_dimension(:dimension_1).should_not be_nil
         subject.find_dimension(:dimension_2).should_not be_nil

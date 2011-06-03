@@ -57,7 +57,7 @@ module StreamCounters
           @dimensions = if @prototype 
             @prototype.dimensions.map do |d| 
               metrics = d.metrics.reject { |name, m| @metrics.key?(name) }
-              [*d.keys, :meta => d.meta, :metrics => metrics]
+              DimensionContext.new(*d.keys, :meta => d.meta, :metrics => metrics)
             end
           else
             []
@@ -69,25 +69,17 @@ module StreamCounters
         end
       
         def dimension(*args, &block)
-          meta = []
-          metrics = {}
-          if block_given?
-            dc = DimensionContext.new
-            dc.instance_eval(&block)
-            meta = dc.meta
-            metrics = dc.metrics
-          end
-          @dimensions << [*args, :meta => meta, :metrics => metrics]
+          dc = DimensionContext.new(*args)
+          dc.instance_eval(&block) if block_given?
+          @dimensions << dc
         end
       
         def build!
-          dimensions = @dimensions.reduce({}) do |acc, d|
-            d = d.dup
-            options = d.pop
-            keys = d
-            options[:metrics] = metrics.merge(options[:metrics])
-            d.sort!
-            acc[d] = Dimension.new(*d, options)
+          dimensions = @dimensions.reduce({}) do |acc, dc|
+            options = {}
+            options[:metrics] = metrics.merge(dc.metrics)
+            options[:meta] = dc.meta
+            acc[dc.keys] = Dimension.new(*dc.keys, options)
             acc
           end
           new_configuration(
@@ -105,8 +97,13 @@ module StreamCounters
       class DimensionContext
         include Metrics
       
-        def initialize
-          @meta = []
+        attr_reader :keys
+      
+        def initialize(*args)
+          options = if args.last.is_a?(Hash) then args.pop else {} end
+          @keys = (args || []).sort
+          @meta = options.fetch(:meta, [])
+          @metrics = options.fetch(:metrics, {})
         end
       
         def meta(*args)

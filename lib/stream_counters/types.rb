@@ -55,9 +55,9 @@ module StreamCounters
     
     def initialize(*args)
       options = if args.last.is_a?(Hash) then args.pop else {} end
+      super(*args)
       @meta = (options[:meta] || []).freeze
       @metrics = (options[:metrics] || {}).freeze
-      super(*args)
     end
     
     def all_keys

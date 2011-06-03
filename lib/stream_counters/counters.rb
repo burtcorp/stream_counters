@@ -10,7 +10,7 @@ module StreamCounters
       reset
     end
     
-    def handle_item(item)
+    def count(item)
       keys = @config.main_keys.map { |k| item.send(k) }
       @config.dimensions.each do |dimension|
         segment_values = dimension.all_keys.map { |dim| item.send(dim) }

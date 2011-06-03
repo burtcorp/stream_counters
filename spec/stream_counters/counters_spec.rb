@@ -43,17 +43,17 @@ module StreamCounters
       end
     end
     
-    describe '#handle_item/#get' do
+    describe '#count/#get' do
       it 'sums the total of each metric given each segment of each dimension' do
         counters = Counters.new(@config1)
         item1 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'foo', :some_count => 1, :another_number =>  3)
         item2 = Item.new(:xyz => 'first', :abc => 'world', :def => 'bar', :some_count => 4, :another_number => 99)
         item3 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'bar', :some_count => 6, :another_number =>  1)
         item4 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'baz', :some_count => 1, :another_number => 45)
-        counters.handle_item(item1)
-        counters.handle_item(item2)
-        counters.handle_item(item3)
-        counters.handle_item(item4)
+        counters.count(item1)
+        counters.count(item2)
+        counters.count(item3)
+        counters.count(item4)
         counters.get(['first'], @config1.find_dimension(:abc)).should == {
           ['hello'] => {:some_sum => 8, :another_sum => 49},
           ['world'] => {:some_sum => 4, :another_sum => 99}
@@ -66,10 +66,10 @@ module StreamCounters
         item2 = Item.new(:xyz => 'first', :abc => 'world', :def => 'bar', :ghi => 'plonk', :some_count => 0, :another_number => 1)
         item3 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'bar', :ghi => 'plunk', :some_count => 0, :another_number => 0)
         item4 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'foo', :ghi => 'plink', :some_count => 1, :another_number => 0)
-        counters.handle_item(item1)
-        counters.handle_item(item2)
-        counters.handle_item(item3)
-        counters.handle_item(item4)
+        counters.count(item1)
+        counters.count(item2)
+        counters.count(item3)
+        counters.count(item4)
         counters.get(['first'], @config2.find_dimension(:def, :ghi)).should == {
           ['foo', 'plink'] => {:some_sum => 2, :another_sum => 0},
           ['bar', 'plonk'] => {:some_sum => 0, :another_sum => 1},
@@ -90,10 +90,10 @@ module StreamCounters
         item2 = Item.new(:xyz => 'first', :abc => 'world', :def => 'bar', :ghi => 'plonk', :some_count => 0, :another_number => 1)
         item3 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'bar', :ghi => 'plunk', :some_count => 0, :another_number => 0)
         item4 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'foo', :ghi => 'plink', :some_count => 1, :another_number => 0)
-        counters.handle_item(item1)
-        counters.handle_item(item2)
-        counters.handle_item(item3)
-        counters.handle_item(item4)
+        counters.count(item1)
+        counters.count(item2)
+        counters.count(item3)
+        counters.count(item4)
         counters.get(['first'], @config3.find_dimension(:abc)).should == {
           ['hello'] => {:some_sum => 2, :another_sum => 0, :xor => 2},
           ['world'] => {:some_sum => 0, :another_sum => 1, :xor => 1}
@@ -109,10 +109,10 @@ module StreamCounters
         item2 = Item.new(:xyz => 'first', :abc => 'world', :def => 'bar', :some_count => 4, :another_number => 99)
         item3 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'bar', :some_count => 6, :another_number =>  1)
         item4 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'baz', :some_count => 1, :another_number => 45)
-        counters.handle_item(item1)
-        counters.handle_item(item2)
-        counters.handle_item(item3)
-        counters.handle_item(item4)
+        counters.count(item1)
+        counters.count(item2)
+        counters.count(item3)
+        counters.count(item4)
         counters.get(['first'], @config1.find_dimension(:abc)).should == {
           ['hello'] => {:some_sum => 8, :another_sum => 0.49},
           ['world'] => {:some_sum => 4, :another_sum => 0.99}
@@ -127,10 +127,10 @@ module StreamCounters
         item2 = Item.new(:xyz => 'first', :abc => 'world', :def => 'bar', :ghi => 'plonk', :some_count => 0, :another_number => 1)
         item3 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'bar', :ghi => 'plunk', :some_count => 0, :another_number => 0)
         item4 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'foo', :ghi => 'plink', :some_count => 1, :another_number => 0)
-        counters.handle_item(item1)
-        counters.handle_item(item2)
-        counters.handle_item(item3)
-        counters.handle_item(item4)
+        counters.count(item1)
+        counters.count(item2)
+        counters.count(item3)
+        counters.count(item4)
         datas = []
         dimensions = []
         counters.each { |data, dimension| datas << data; dimensions << dimension }

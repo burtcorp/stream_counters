@@ -54,10 +54,10 @@ module StreamCounters
     alias_method :keys, :elements
     
     def initialize(*args)
-      options = if args.last.is_a?(Hash) then args.pop else {} end
+      @options = if args.last.is_a?(Hash) then args.pop else {} end
       super(*args)
-      @meta = (options[:meta] || []).freeze
-      @metrics = (options[:metrics] || {}).freeze
+      @meta = (@options[:meta] || []).freeze
+      @metrics = (@options[:metrics] || {}).freeze
     end
     
     def all_keys

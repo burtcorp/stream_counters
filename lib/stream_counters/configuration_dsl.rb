@@ -76,26 +76,29 @@ module StreamCounters
       
         def build!
           dimensions = @dimensions.reduce({}) do |acc, dc|
-            options = {}
-            options[:metrics] = metrics.merge(dc.metrics)
-            options[:meta] = dc.meta
-            acc[dc.keys] = Dimension.new(*dc.keys, options)
+            acc[dc.keys] = dc.to_dimension(metrics)
             acc
           end
-          new_configuration(
+          Configuration.new(
             Keys.new(*@main_keys),
             metrics,
             dimensions.values
           )
         end
-        
-        def new_configuration(keys, metrics, dimensions)
-          Configuration.new(keys, metrics, dimensions)
+      end
+    
+      module DimensionCreation
+        def to_dimension(metrics, options={})
+          options = options.dup
+          options[:metrics] = metrics.merge(self.metrics)
+          options[:meta] = self.meta
+          Dimension.new(*self.keys, options)
         end
       end
     
       class DimensionContext
         include Metrics
+        include DimensionCreation
       
         attr_reader :keys
       
@@ -112,6 +115,7 @@ module StreamCounters
           else @meta = args
           end
         end
+        
       end
     end
   end

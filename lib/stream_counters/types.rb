@@ -2,6 +2,12 @@
 
 
 module StreamCounters
+  module HashCalculator
+    def self.hash(*args)
+      args.reduce(0) { |h, p| ((h + p.hash) * 31) % (2**31 - 1) }
+    end
+  end
+  
   class ImmutableList
     include Enumerable
     
@@ -27,7 +33,7 @@ module StreamCounters
     alias_method :==, :eql?
     
     def hash
-      @hash ||= @elements.reduce(0) { |h, p| ((h + p.hash) * 31) % (2**31 - 1) }
+      @hash ||= HashCalculator.hash(@elements)
     end
     
     def to_ary
@@ -63,24 +69,26 @@ module StreamCounters
     alias_method :==, :eql?
     
     def hash
-      @hash ||= (@meta + @metrics.keys + @metrics.values).reduce(super) { |h, p| ((h + p.hash) * 31) % (2**31 - 1) }
+      @hash ||= HashCalculator.hash(@meta + @metrics.keys + @metrics.values)
     end
   end
   
   class Metric
-    attr_reader :name, :message
+    DEFAULT_TYPE = :numeric
     
-    def initialize(name, message)
-      @name, @message = name, message
+    attr_reader :name, :message, :type
+    
+    def initialize(name, message, type=DEFAULT_TYPE)
+      @name, @message, @type = name, message, type
     end
     
     def eql?(other)
-      self.name == other.name && self.message == other.message
+      self.name == other.name && self.message == other.message && self.type == other.type
     end
     alias_method :==, :eql?
     
     def hash
-      @hash ||= @name.hash * 31 + @message.hash
+      @hash ||= HashCalculator.hash(@name, @message, @type)
     end
   end
 end

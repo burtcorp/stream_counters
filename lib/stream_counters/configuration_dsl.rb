@@ -14,9 +14,25 @@ module StreamCounters
   private
     
     module Metrics
-      def metric(name, message)
+      def metric(name, *args)
         @metrics ||= {}
-        @metrics[name] = Metric.new(name, message)
+        message = nil
+        type = nil
+        if args.empty?
+          message = name
+          type = Metric::DEFAULT_TYPE
+          options = {}
+        elsif args.first.is_a?(Symbol)
+          message = args.shift
+          options = args.shift || {}
+        else
+          options = args.shift || {}
+        end
+        @metrics[name] = Metric.new(
+          name, 
+          message || options.fetch(:message, name),
+          type || options.fetch(:type, Metric::DEFAULT_TYPE)
+        )
       end
       
       def metrics

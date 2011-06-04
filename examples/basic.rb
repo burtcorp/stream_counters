@@ -35,7 +35,7 @@ conf = configuration do
   metric :clicks, :click?, :type => :predicate
 end
 
-counters = conf.create_counters(:filters => {:predicate => lambda { |v| v ? 1 : 0 }})
+counters = conf.create_counters(:reducers => {:predicate => lambda { |acc, v| acc + (v ? 1 : 0) }})
 counters.count(Visit.new(:api_key => 'ABC', :date => Time.utc(2011, 6, 3), :path => '/blog/article2',       :click => false))
 counters.count(Visit.new(:api_key => 'ABC', :date => Time.utc(2011, 6, 3), :path => '/jobs/monkey-handler', :click => false))
 counters.count(Visit.new(:api_key => 'DEF', :date => Time.utc(2011, 6, 4), :path => '/',                    :click => false))

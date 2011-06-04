@@ -51,7 +51,7 @@ module StreamCounters
       
         def initialize(prototype)
           @prototype = prototype
-          @main_keys = if @prototype then @prototype.main_keys.to_a else [] end
+          @base_keys = if @prototype then @prototype.base_keys.to_a else [] end
           @metrics = if @prototype then @prototype.metrics.dup else {} end
           @dimensions = if @prototype 
             @prototype.dimensions.map do |d| 
@@ -63,8 +63,8 @@ module StreamCounters
           end
         end
       
-        def main_keys(*args)
-          @main_keys = args
+        def base_keys(*args)
+          @base_keys = args
         end
       
         def dimension(*args, &block)
@@ -79,7 +79,7 @@ module StreamCounters
             acc
           end
           Configuration.new(
-            Keys.new(*@main_keys),
+            Keys.new(*@base_keys),
             metrics,
             dimensions.values
           )

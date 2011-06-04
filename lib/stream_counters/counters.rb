@@ -10,7 +10,7 @@ module StreamCounters
     end
     
     def count(item)
-      keys = @config.main_keys.map { |k| item.send(k) }
+      keys = @config.base_keys.map { |k| item.send(k) }
       @config.dimensions.each do |dimension|
         segment_values = dimension.all_keys.map { |dim| item.send(dim) }
         counters_for_key = (@counters[keys] ||= {})
@@ -43,7 +43,7 @@ module StreamCounters
         counters_for_keys.keys.each do |dimension|
           counters_for_dims = counters_for_keys[dimension]
           counters_for_dims.keys.each do |segment|
-            data = Hash[@config.main_keys.zip(keys) + dimension.all_keys.zip(segment)].merge!(counters_for_dims[segment])
+            data = Hash[@config.base_keys.zip(keys) + dimension.all_keys.zip(segment)].merge!(counters_for_dims[segment])
             case block.arity
             when 1 then yield data
             else        yield data, dimension

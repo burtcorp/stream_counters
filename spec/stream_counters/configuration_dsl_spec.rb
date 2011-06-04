@@ -10,7 +10,7 @@ module StreamCounters
     context 'basic configuration' do
       subject do
         configuration do
-          main_keys :main_key_1, :main_key_2, :main_key_3
+          base_keys :main_key_1, :main_key_2, :main_key_3
 
           # single property dimensions
           dimension :dimension_1
@@ -36,8 +36,8 @@ module StreamCounters
         end
       end
     
-      it 'has the right main keys' do
-        subject.main_keys.should == [:main_key_1, :main_key_2, :main_key_3]
+      it 'has the right base keys' do
+        subject.base_keys.should == [:main_key_1, :main_key_2, :main_key_3]
       end
 
       it 'captures dimensions (without meta)' do
@@ -48,7 +48,7 @@ module StreamCounters
       
       it 'sorts the dimension property names in alphabetical order' do
         config = ConfigurationDsl.configuration do
-          main_keys :x
+          base_keys :x
           dimension :b, :a
         end
         config.dimensions.first.keys.should == [:a, :b]
@@ -84,14 +84,14 @@ module StreamCounters
     context 'merging' do
       subject do
         configuration do
-          main_keys :key1
+          base_keys :key1
           dimension :dim1
           dimension :dim2
           metric :metric1
           metric :metric2
         end.merge do
           # overrides old main keys
-          main_keys :key2
+          base_keys :key2
           # overrides old dimension
           dimension :dim2 do
             meta :test
@@ -105,8 +105,8 @@ module StreamCounters
         end
       end
       
-      it 'overrides main_keys' do
-        subject.main_keys.should == [:key2]
+      it 'overrides base_keys' do
+        subject.base_keys.should == [:key2]
       end
       
       it 'contains the union of the dimensions' do

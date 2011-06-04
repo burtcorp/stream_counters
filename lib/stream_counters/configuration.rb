@@ -3,10 +3,10 @@
 
 module StreamCounters
   class Configuration
-    attr_reader :main_keys, :metrics, :dimensions
+    attr_reader :base_keys, :metrics, :dimensions
     
-    def initialize(main_keys, metrics, dimensions)
-      @main_keys = main_keys
+    def initialize(base_keys, metrics, dimensions)
+      @base_keys = base_keys
       @metrics = metrics
       @dimensions = dimensions
     end

@@ -45,7 +45,7 @@ end
 include StreamCounters::ConfigurationDsl
 
 conf = configuration do
-  main_keys :api_key, :date
+  base_keys :api_key, :date
   dimension :path
   dimension :section do
     importance :high

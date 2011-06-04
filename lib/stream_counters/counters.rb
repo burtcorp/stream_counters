@@ -5,8 +5,7 @@ module StreamCounters
     def initialize(config, options={})
       @config = config
       @specials = options.fetch(:specials, [])
-      @value_filters = options.fetch(:filters, {})
-      @identity_filter = proc { |x| x }
+      @reducers = options.fetch(:reducers, {})
       reset
     end
     
@@ -18,7 +17,7 @@ module StreamCounters
         counters_for_dim = (counters_for_key[dimension] ||= {})
         counters_for_seg = (counters_for_dim[segment_values] ||= default_counters(dimension))
         dimension.metrics.each do |metric_name, metric|
-          counters_for_seg[metric_name] += calculate_value(item, metric)
+          counters_for_seg[metric_name] = reduce(counters_for_seg[metric_name], item, metric)
         end
         @specials.each do |special|
           special.calculate(counters_for_seg, item)
@@ -29,7 +28,7 @@ module StreamCounters
     def reset
       @counters = {}
       @metrics_counters = @config.dimensions.reduce({}) do |acc, dimension|
-        acc[dimension] = Hash[dimension.metrics.map { |k, v| [k, 0] }].freeze
+        acc[dimension] = Hash[dimension.metrics.map { |name, metric| [name, metric.default] }].freeze
         acc
       end
     end
@@ -60,10 +59,13 @@ module StreamCounters
     
   protected
   
-    def calculate_value(item, metric)
+    def reduce(current_value, item, metric)
       value = item.send(metric.message)
-      filter = @value_filters.fetch(metric.type, @identity_filter)
-      filter.call(value)
+      reducer = @reducers[metric.type]
+      if reducer
+      then reducer.call(current_value, value)
+      else current_value + value
+      end
     end
     
   private

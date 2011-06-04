@@ -100,11 +100,11 @@ module StreamCounters
         }
       end
       
-      it 'can be configured to filter certain metrics with custom filters' do
+      it 'uses a metric\'s default value from the configuration (when it\'s an integer)' do
         @config1 = @config1.merge do
-          metric :another_sum, :another_number, :type => :percent
+          metric :another_sum, :another_number, :default => 3
         end
-        counters = Counters.new(@config1, :filters => {:percent => lambda { |x| x/100.0 }})
+        counters = Counters.new(@config1)
         item1 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'foo', :some_count => 1, :another_number =>  3)
         item2 = Item.new(:xyz => 'first', :abc => 'world', :def => 'bar', :some_count => 4, :another_number => 99)
         item3 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'bar', :some_count => 6, :another_number =>  1)
@@ -114,8 +114,46 @@ module StreamCounters
         counters.count(item3)
         counters.count(item4)
         counters.get(['first'], @config1.find_dimension(:abc)).should == {
-          ['hello'] => {:some_sum => 8, :another_sum => 0.49},
-          ['world'] => {:some_sum => 4, :another_sum => 0.99}
+          ['hello'] => {:some_sum => 8, :another_sum =>  52},
+          ['world'] => {:some_sum => 4, :another_sum => 102}
+        }
+      end
+
+      it 'uses a metric\'s default value from the configuration (when it\'s a list)' do
+        @config1 = @config1.merge do
+          metric :another_sum, :another_number, :default => []
+        end
+        counters = Counters.new(@config1)
+        item1 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'foo', :some_count => 1, :another_number => [ 3])
+        item2 = Item.new(:xyz => 'first', :abc => 'world', :def => 'bar', :some_count => 4, :another_number => [99])
+        item3 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'bar', :some_count => 6, :another_number => [ 1])
+        item4 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'baz', :some_count => 1, :another_number => [45])
+        counters.count(item1)
+        counters.count(item2)
+        counters.count(item3)
+        counters.count(item4)
+        counters.get(['first'], @config1.find_dimension(:abc)).should == {
+          ['hello'] => {:some_sum => 8, :another_sum => [3, 1, 45]},
+          ['world'] => {:some_sum => 4, :another_sum => [99]}
+        }
+      end
+
+      it 'can be configured to use a custom reducer function for a metric type' do
+        @config1 = @config1.merge do
+          metric :another_sum, :another_number, :default => true, :type => :boolean
+        end
+        counters = Counters.new(@config1, :reducers => {:boolean => lambda { |acc, x| acc && x }})
+        item1 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'foo', :some_count => 1, :another_number => true)
+        item2 = Item.new(:xyz => 'first', :abc => 'world', :def => 'bar', :some_count => 4, :another_number => true)
+        item3 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'bar', :some_count => 6, :another_number => false)
+        item4 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'baz', :some_count => 1, :another_number => true)
+        counters.count(item1)
+        counters.count(item2)
+        counters.count(item3)
+        counters.count(item4)
+        counters.get(['first'], @config1.find_dimension(:abc)).should == {
+          ['hello'] => {:some_sum => 8, :another_sum => false},
+          ['world'] => {:some_sum => 4, :another_sum => true}
         }
       end
     end

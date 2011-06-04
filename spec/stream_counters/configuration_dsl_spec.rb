@@ -31,6 +31,8 @@ module StreamCounters
           metric :metric_2s, :metric_2
           # metric with message name == metric name
           metric :metric_x
+          # metric with non-numeric type
+          metric :non_numeric, :type => :list, :default => []
         end
       end
     
@@ -62,7 +64,8 @@ module StreamCounters
         dimension.metrics.should == {
           :metric_1s => Metric.new(:metric_1s, :metric_1?, :predicate), 
           :metric_2s => Metric.new(:metric_2s, :metric_2),
-          :metric_x => Metric.new(:metric_x, :metric_x)
+          :metric_x => Metric.new(:metric_x, :metric_x),
+          :non_numeric => Metric.new(:non_numeric, :non_numeric, :list, [])
         }
       end
       
@@ -72,7 +75,8 @@ module StreamCounters
           :metric_1s => Metric.new(:metric_1s, :metric_1?, :predicate), 
           :metric_2s => Metric.new(:metric_2s, :metric_2),
           :metric_3s => Metric.new(:metric_3s, :metric_3?),
-          :metric_x => Metric.new(:metric_x, :metric_x)
+          :metric_x => Metric.new(:metric_x, :metric_x),
+          :non_numeric => Metric.new(:non_numeric, :non_numeric, :list, [])
         }
       end
     end

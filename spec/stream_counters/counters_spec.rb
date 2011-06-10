@@ -19,7 +19,14 @@ module StreamCounters
   
   describe Counters do
     include ConfigurationDsl
-    
+
+    class Special
+      def initialize; reset; end
+      def reset; @value = {:xor => 0}; end
+      def count(item); @value[:xor] += 1 if (item.some_count == 1) ^ (item.another_number == 1); end
+      def value; @value; end
+    end
+
     before do
       @config1 = configuration do
         base_keys :xyz
@@ -78,14 +85,7 @@ module StreamCounters
       end
     
       it 'delegates special metrics' do
-        special = Object.new
-        def special.default
-          {:xor => 0}
-        end
-        def special.calculate(metrics, item)
-          metrics[:xor] += 1 if (item.some_count == 1) ^ (item.another_number == 1)
-        end
-        counters = Counters.new(@config3, :specials => [special])
+        counters = Counters.new(@config3, :specials => [Special])
         item1 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'foo', :ghi => 'plink', :some_count => 1, :another_number => 0)
         item2 = Item.new(:xyz => 'first', :abc => 'world', :def => 'bar', :ghi => 'plonk', :some_count => 0, :another_number => 1)
         item3 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'bar', :ghi => 'plunk', :some_count => 0, :another_number => 0)
@@ -160,7 +160,7 @@ module StreamCounters
   
     describe '#each' do
       it 'yields each key/dimension/segment combination' do
-        counters = Counters.new(@config2)
+        counters = Counters.new(@config2, :specials => [Special])
         item1 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'foo', :ghi => 'plink', :some_count => 1, :another_number => 0)
         item2 = Item.new(:xyz => 'first', :abc => 'world', :def => 'bar', :ghi => 'plonk', :some_count => 0, :another_number => 1)
         item3 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'bar', :ghi => 'plunk', :some_count => 0, :another_number => 0)
@@ -173,11 +173,11 @@ module StreamCounters
         dimensions = []
         counters.each { |data, dimension| datas << data; dimensions << dimension }
         datas.should == [
-          {:xyz => 'first', :abc => 'hello',                  :some_sum => 2, :another_sum => 0},
-          {:xyz => 'first', :abc => 'world',                  :some_sum => 0, :another_sum => 1},
-          {:xyz => 'first', :def => 'foo',   :ghi => 'plink', :some_sum => 2, :another_sum => 0},
-          {:xyz => 'first', :def => 'bar',   :ghi => 'plonk', :some_sum => 0, :another_sum => 1},
-          {:xyz => 'first', :def => 'bar',   :ghi => 'plunk', :some_sum => 0, :another_sum => 0}
+          {:xyz => 'first', :abc => 'hello',                  :some_sum => 2, :another_sum => 0, :xor => 2},
+          {:xyz => 'first', :abc => 'world',                  :some_sum => 0, :another_sum => 1, :xor => 1},
+          {:xyz => 'first', :def => 'foo',   :ghi => 'plink', :some_sum => 2, :another_sum => 0, :xor => 2},
+          {:xyz => 'first', :def => 'bar',   :ghi => 'plonk', :some_sum => 0, :another_sum => 1, :xor => 1},
+          {:xyz => 'first', :def => 'bar',   :ghi => 'plunk', :some_sum => 0, :another_sum => 0, :xor => 0}
         ]
         dimensions.should == [
           @config2.find_dimension(:abc),

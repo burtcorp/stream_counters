@@ -23,7 +23,7 @@ module StreamCounters
         if @specials.any?
           specials_for_key = (@special_counters[keys] ||= {})
           specials_for_dim = (specials_for_key[dimension] ||= {})
-          specials_for_seg = (specials_for_dim[segment_values] ||= @specials.map { |special| special.new })
+          specials_for_seg = (specials_for_dim[segment_values] ||= @specials.map { |special| special.new(keys, dimension) })
 
           specials_for_seg.each do |special|
             special.count(item)
@@ -85,7 +85,7 @@ module StreamCounters
         @special_counters[keys][dimension].reduce(counters_for_dim) do |counters, specials_for_dim|
           segment, specials_for_seg = specials_for_dim
           specials_for_seg.each do |special|
-            counters[segment].merge!(special.value)
+            counters[segment].merge!(special.value(segment))
           end
           counters
         end

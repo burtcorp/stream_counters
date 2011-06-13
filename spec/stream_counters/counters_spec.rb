@@ -21,10 +21,10 @@ module StreamCounters
     include ConfigurationDsl
 
     class Special
-      def initialize; reset; end
+      def initialize(keys, dimension); reset; end
       def reset; @value = {:xor => 0}; end
       def count(item); @value[:xor] += 1 if (item.some_count == 1) ^ (item.another_number == 1); end
-      def value; @value; end
+      def value(segment); @value; end
     end
 
     before do

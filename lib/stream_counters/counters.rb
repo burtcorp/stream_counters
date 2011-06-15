@@ -10,10 +10,10 @@ module StreamCounters
     end
     
     def count(item)
-      keys = @config.base_keys.map { |k| item.send(k) }
+      base_key_values = @config.base_keys.map { |k| item.send(k) }
       @config.dimensions.each do |dimension|
         segment_values = dimension.all_keys.map { |dim| item.send(dim) }
-        counters_for_key = (@counters[keys] ||= {})
+        counters_for_key = (@counters[base_key_values] ||= {})
         counters_for_dim = (counters_for_key[dimension] ||= {})
         counters_for_seg = (counters_for_dim[segment_values] ||= @metrics_counters[dimension].dup)
         dimension.metrics.each do |metric_name, metric|
@@ -21,8 +21,8 @@ module StreamCounters
         end
         
         if @specials.any?
-          specials_for_key = (@special_counters[keys] ||= {})
-          specials_for_dim = (specials_for_key[dimension] ||= @specials.map { |special| special.new(keys, dimension) })
+          specials_for_key = (@special_counters[base_key_values] ||= {})
+          specials_for_dim = (specials_for_key[dimension] ||= @specials.map { |special| special.new(base_key_values, dimension) })
 
           specials_for_dim.each do |special|
             special.count(item)

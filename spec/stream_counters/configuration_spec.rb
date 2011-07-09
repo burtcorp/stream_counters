@@ -25,6 +25,7 @@ module StreamCounters
         dimension :def do
           meta :ghi
         end
+        dimension :ghi
         metric :some_sum, :some_count
         metric :another_sum, :another_number
       end

@@ -35,6 +35,7 @@ module StreamCounters
       m.concat(base_keys.to_a)
       m.concat(metrics.values.map(&:message).flatten)
       m.concat(dimensions.map(&:keys).flatten)
+      m.concat(dimensions.map(&:meta).flatten)
       m
     end
   end

@@ -12,7 +12,7 @@ module StreamCounters
   end
   
   class TestClass3
-    attr_reader :xyz, :abc, :def, :some_count, :another_number
+    attr_reader :xyz, :abc, :def, :ghi, :some_count, :another_number
   end
   
   describe Configuration do
@@ -22,7 +22,9 @@ module StreamCounters
       @config = configuration do
         base_keys :xyz
         dimension :abc
-        dimension :def
+        dimension :def do
+          meta :ghi
+        end
         metric :some_sum, :some_count
         metric :another_sum, :another_number
       end
@@ -31,12 +33,12 @@ module StreamCounters
     describe '#validate_class' do
       it 'returns an array of the methods that are missing (1)' do
         methods = @config.validate_class(TestClass1)
-        methods.should == [:xyz, :abc, :def, :some_count, :another_number].sort
+        methods.should == [:xyz, :abc, :def, :ghi, :some_count, :another_number].sort
       end
       
       it 'returns an array of the methods that are missing (2)' do
         methods = @config.validate_class(TestClass2)
-        methods.should == [:abc, :def, :another_number].sort
+        methods.should == [:abc, :def, :ghi, :another_number].sort
       end
 
       it 'returns an empty array when no methods are missing' do

@@ -20,16 +20,22 @@ module StreamCounters
     end
     
     def validate_class(cls)
-      necessary_methods = []
-      necessary_methods.concat(base_keys.to_a)
-      necessary_methods.concat(metrics.values.map(&:message).flatten)
-      necessary_methods.concat(dimensions.map(&:keys).flatten)
       (necessary_methods - cls.instance_methods).sort
     end
     
     def validate_class!(cls)
       missing_methods = validate_class(cls)
       raise TypeError, "The class #{cls} is missing the methods #{missing_methods.join(', ')}", [] unless missing_methods.empty?
+    end
+    
+  protected
+  
+    def necessary_methods
+      m = []
+      m.concat(base_keys.to_a)
+      m.concat(metrics.values.map(&:message).flatten)
+      m.concat(dimensions.map(&:keys).flatten)
+      m
     end
   end
 end

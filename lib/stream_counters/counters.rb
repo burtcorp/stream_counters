@@ -33,12 +33,16 @@ module StreamCounters
     
     def reset
       @counters = {}
-      @special_counters = {}
       @metrics_counters = @config.dimensions.reduce({}) do |acc, dimension|
         acc[dimension] = Hash[dimension.metrics.map { |name, metric| [name, metric.default] }].freeze
         acc
       end
-      @special_counters.each { |special| special.reset }
+      @special_counters.each do |key, special| 
+        special.each do | dimension, dimension_counters |
+          dimension_counters.each { |dimension_counter| dimension_counter.reset }
+        end
+      end if !@special_counters.nil?
+      @special_counters = {}
     end
     
     def get(keys, dimension)

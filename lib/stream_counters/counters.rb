@@ -34,7 +34,16 @@ module StreamCounters
     def reset
       @counters = {}
       @metrics_counters = @config.dimensions.reduce({}) do |acc, dimension|
-        acc[dimension] = Hash[dimension.metrics.map { |name, metric| [name, metric.default] }].freeze
+        metrics_defaults = {}
+        dimension.metrics.each do |name, metric|
+          default = if metric.default.respond_to?(:call)
+                      metric.default.call(*[dimension, name, metric][0,metric.default.arity])
+                    else
+                      metric.default
+                    end
+          metrics_defaults[name] = default
+        end
+        acc[dimension] = metrics_defaults.freeze
         acc
       end
       @special_counters.each do |key, special| 

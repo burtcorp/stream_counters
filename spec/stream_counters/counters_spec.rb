@@ -147,6 +147,28 @@ module StreamCounters
         }
       end
 
+      it 'uses a metric\'s default value from the configuration (when it responds to :call)' do
+        @config1 = @config1.merge do
+          metric :another_sum, :another_number, :default => lambda { [] }
+          metric :another_sum_with_1_args, :another_number, :default => lambda { |dimension| [] }
+          metric :another_sum_with_2_args, :another_number, :default => lambda { |dimension, name| [] }
+          metric :another_sum_with_3_args, :another_number, :default => lambda { |dimension, name, metric| [] }
+        end
+        counters = Counters.new(@config1)
+        item1 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'foo', :some_count => 1, :another_number => [ 3])
+        item2 = Item.new(:xyz => 'first', :abc => 'world', :def => 'bar', :some_count => 4, :another_number => [99])
+        item3 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'bar', :some_count => 6, :another_number => [ 1])
+        item4 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'baz', :some_count => 1, :another_number => [45])
+        counters.count(item1)
+        counters.count(item2)
+        counters.count(item3)
+        counters.count(item4)
+        counters.get(['first'], @config1.find_dimension(:abc)).should == {
+          ['hello'] => {:some_sum => 8, :another_sum => [3, 1, 45], :another_sum_with_1_args => [3, 1, 45], :another_sum_with_2_args => [3, 1, 45], :another_sum_with_3_args => [3, 1, 45]},
+          ['world'] => {:some_sum => 4, :another_sum => [99], :another_sum_with_1_args => [99], :another_sum_with_2_args => [99], :another_sum_with_3_args => [99]}
+        }
+      end
+
       it 'can be configured to use a custom reducer function for a metric type' do
         @config1 = @config1.merge do
           metric :another_sum, :another_number, :default => true, :type => :boolean

@@ -147,6 +147,57 @@ module StreamCounters
         }
       end
 
+      it 'uses a metric\'s default value from the configuration (when it responds to :call)' do
+        @config1 = @config1.merge do
+          metric :another_sum,             :another_number, :default => lambda {                     [] }, :type => :list
+          metric :another_sum_with_1_args, :another_number, :default => lambda { |metric|            [] }, :type => :list
+          metric :another_sum_with_2_args, :another_number, :default => lambda { |metric, dimension| [] }, :type => :list
+        end
+        counters = Counters.new(@config1, :reducers => {:list => lambda { |acc, x| acc << x }})
+        item1 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'foo', :some_count => 1, :another_number =>  3)
+        item2 = Item.new(:xyz => 'first', :abc => 'world', :def => 'bar', :some_count => 4, :another_number => 99)
+        item3 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'bar', :some_count => 6, :another_number =>  1)
+        item4 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'baz', :some_count => 1, :another_number => 45)
+        counters.count(item1)
+        counters.count(item2)
+        counters.count(item3)
+        counters.count(item4)
+        counters.get(['first'], @config1.find_dimension(:abc)).should == {
+          ['hello'] => {:some_sum => 8, :another_sum => [3, 1, 45], :another_sum_with_1_args => [3, 1, 45], :another_sum_with_2_args => [3, 1, 45]},
+          ['world'] => {:some_sum => 4, :another_sum => [99], :another_sum_with_1_args => [99], :another_sum_with_2_args => [99]}
+        }
+      end
+
+      it 'calls a metric\'s default value with metric and dimension if it responds to :call' do
+        default_value = double('default value')
+        default_value.stub(:respond_to?).with(:call).and_return(true)
+        default_value.stub(:arity).and_return(2)
+        default_value.should_receive(:call) do |metric, dimension|
+          metric.name.should == :another_sum
+          dimension.keys.should == [:abc]
+          []
+        end
+        @config1 = configuration do
+          base_keys :xyz
+          dimension :abc
+          metric :another_sum, :another_number, :default => default_value, :type => :list
+        end
+        counters = Counters.new(@config1, :reducers => {:list => lambda { |acc, x| acc << x }})
+        item1 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'foo', :some_count => 1, :another_number =>  3)
+        counters.count(item1)
+      end
+
+      it 'raises an error when callable default value has arity > 2' do
+        @config1 = @config1.merge do
+          metric :another_sum, :another_number, :default => lambda { |metric, dimension, superfluous| [] }
+        end
+        proc {
+          counters = Counters.new(@config1)
+          item1 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'foo', :some_count => 1, :another_number =>  3)
+          counters.count(item1)
+        }.should raise_error(ArgumentError)
+      end
+      
       it 'can be configured to use a custom reducer function for a metric type' do
         @config1 = @config1.merge do
           metric :another_sum, :another_number, :default => true, :type => :boolean

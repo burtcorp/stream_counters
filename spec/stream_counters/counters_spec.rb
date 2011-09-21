@@ -169,6 +169,13 @@ module StreamCounters
         }
       end
 
+      it 'raises an error when callable default value has arity > 3' do
+        @config1 = @config1.merge do
+          metric :another_sum, :another_number, :default => lambda { |dimension, name, metric, erroneous| [] }
+        end
+        proc { Counters.new(@config1) }.should raise_error(ArgumentError)
+      end
+      
       it 'can be configured to use a custom reducer function for a metric type' do
         @config1 = @config1.merge do
           metric :another_sum, :another_number, :default => true, :type => :boolean

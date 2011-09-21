@@ -36,9 +36,8 @@ module StreamCounters
       dimension.metrics.each do |name, metric|
         default = if metric.default.respond_to?(:call)
                     case metric.default.arity
-                    when 3 then metric.default.call(dimension, name, metric)
-                    when 2 then metric.default.call(dimension, name)
-                    when 1 then metric.default.call(dimension)
+                    when 2 then metric.default.call(metric, dimension)
+                    when 1 then metric.default.call(metric)
                     when 0 then metric.default.call
                     else raise(ArgumentError, "Wrong number of arguments in default value (#{metric.default.arity})")
                     end

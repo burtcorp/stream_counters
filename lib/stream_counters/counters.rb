@@ -15,7 +15,7 @@ module StreamCounters
         segment_values = dimension.all_keys.map { |dim| item.send(dim) }
         counters_for_key = (@counters[base_key_values] ||= {})
         counters_for_dim = (counters_for_key[dimension] ||= {})
-        counters_for_seg = (counters_for_dim[segment_values] ||= @metrics_counters[dimension].dup)
+        counters_for_seg = (counters_for_dim[segment_values] ||= metrics_counters_defaults(dimension))
         dimension.metrics.each do |metric_name, metric|
           counters_for_seg[metric_name] = reduce(counters_for_seg[metric_name], item, metric)
         end
@@ -30,22 +30,28 @@ module StreamCounters
         end
       end
     end
+
+    def metrics_counters_defaults(dimension)
+      metrics_defaults = {}
+      dimension.metrics.each do |name, metric|
+        default = if metric.default.respond_to?(:call)
+                    case metric.default.arity
+                    when 3 then metric.default.call(dimension, name, metric)
+                    when 2 then metric.default.call(dimension, name)
+                    when 1 then metric.default.call(dimension)
+                    when 0 then metric.default.call
+                    else raise(ArgumentError, "Wrong number of arguments in default value (#{metric.default.arity})")
+                    end
+                  else
+                    metric.default
+                  end
+        metrics_defaults[name] = default
+      end
+      metrics_defaults
+    end
     
     def reset
       @counters = {}
-      @metrics_counters = @config.dimensions.reduce({}) do |acc, dimension|
-        metrics_defaults = {}
-        dimension.metrics.each do |name, metric|
-          default = if metric.default.respond_to?(:call)
-                      metric.default.call(*[dimension, name, metric][0,metric.default.arity])
-                    else
-                      metric.default
-                    end
-          metrics_defaults[name] = default
-        end
-        acc[dimension] = metrics_defaults.freeze
-        acc
-      end
       @special_counters.each do |key, special| 
         special.each do | dimension, dimension_counters |
           dimension_counters.each { |dimension_counter| dimension_counter.reset }

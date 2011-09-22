@@ -90,7 +90,7 @@ module StreamCounters
       reducer = @reducers[metric.type]
       if reducer
       then reducer.call(current_value, value)
-      else current_value + value
+      else current_value + (value || 0)
       end
     end
     

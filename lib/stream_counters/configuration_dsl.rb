@@ -37,7 +37,8 @@ module StreamCounters
             name, 
             message || options.fetch(:message, name),
             options.fetch(:type, Metric::DEFAULT_TYPE),
-            options.fetch(:default, Metric::DEFAULT_VALUE)
+            options.fetch(:default, Metric::DEFAULT_VALUE),
+            options.fetch(:if, Metric::DEFAULT_IF_MESSAGE)
           )
         end
       

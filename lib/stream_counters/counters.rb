@@ -17,7 +17,7 @@ module StreamCounters
         counters_for_dim = (counters_for_key[dimension] ||= {})
         counters_for_seg = (counters_for_dim[segment_values] ||= metrics_counters_defaults(dimension))
         dimension.metrics.each do |metric_name, metric|
-          counters_for_seg[metric_name] = reduce(counters_for_seg[metric_name], item, metric)
+          counters_for_seg[metric_name] = reduce(counters_for_seg[metric_name], item, metric) if metric.if_message.nil? || !!item.send(metric.if_message)
         end
         
         if @specials.any?

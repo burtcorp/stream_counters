@@ -33,6 +33,8 @@ module StreamCounters
           metric :metric_x
           # metric with non-numeric type
           metric :non_numeric, :type => :list, :default => []
+          # metric with conditional
+          metric :conditional_metric, :if => :metric_1?
         end
       end
     
@@ -65,7 +67,8 @@ module StreamCounters
           :metric_1s => Metric.new(:metric_1s, :metric_1?, :predicate), 
           :metric_2s => Metric.new(:metric_2s, :metric_2),
           :metric_x => Metric.new(:metric_x, :metric_x),
-          :non_numeric => Metric.new(:non_numeric, :non_numeric, :list, [])
+          :non_numeric => Metric.new(:non_numeric, :non_numeric, :list, []),
+          :conditional_metric => Metric.new(:conditional_metric, :conditional_metric, Metric::DEFAULT_TYPE, Metric::DEFAULT_VALUE, :metric_1?)
         }
       end
       
@@ -76,7 +79,8 @@ module StreamCounters
           :metric_2s => Metric.new(:metric_2s, :metric_2),
           :metric_3s => Metric.new(:metric_3s, :metric_3?),
           :metric_x => Metric.new(:metric_x, :metric_x),
-          :non_numeric => Metric.new(:non_numeric, :non_numeric, :list, [])
+          :non_numeric => Metric.new(:non_numeric, :non_numeric, :list, []),
+          :conditional_metric => Metric.new(:conditional_metric, :conditional_metric, Metric::DEFAULT_TYPE, Metric::DEFAULT_VALUE, :metric_1?)
         }
       end
     end

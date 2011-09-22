@@ -216,6 +216,30 @@ module StreamCounters
           ['world'] => {:some_sum => 4, :another_sum => true}
         }
       end
+
+      it 'only counts items with truthy :if message, if not nil for a metric' do
+        @config1 = configuration do
+          base_keys :xyz
+          dimension :abc
+          metric :some_sum, :some_count, :if => :another_number
+          metric :another_sum, :some_count, :if => nil
+        end
+        counters = Counters.new(@config1, :reducers => {:boolean => lambda { |acc, x| acc && x }})
+        item1 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'foo', :some_count => 1, :another_number => true)
+        item2 = Item.new(:xyz => 'first', :abc => 'world', :def => 'bar', :some_count => 4, :another_number => true)
+        item3 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'bar', :some_count => 6, :another_number => false)
+        item4 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'baz', :some_count => 1, :another_number => true)
+        item5 = Item.new(:xyz => 'first', :abc => 'world', :def => 'bar', :some_count => 28, :another_number => false)
+        counters.count(item1)
+        counters.count(item2)
+        counters.count(item3)
+        counters.count(item4)
+        counters.count(item5)
+        counters.get(['first'], @config1.find_dimension(:abc)).should == {
+          ['hello'] => {:some_sum => 2, :another_sum => 8},
+          ['world'] => {:some_sum => 4, :another_sum => 32}
+        }
+      end
     end
   
     describe '#each' do

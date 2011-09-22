@@ -84,24 +84,25 @@ module StreamCounters
   class Metric
     DEFAULT_TYPE = :numeric
     DEFAULT_VALUE = 0
+    DEFAULT_IF_MESSAGE = nil
     
-    attr_reader :name, :message, :type, :default
+    attr_reader :name, :message, :type, :default, :if_message
     
-    def initialize(name, message=nil, type=DEFAULT_TYPE, default=0)
-      @name, @message, @type, @default = name, message || name, type, default
+    def initialize(name, message=nil, type=DEFAULT_TYPE, default=DEFAULT_VALUE, if_message=DEFAULT_IF_MESSAGE)
+      @name, @message, @type, @default, @if_message = name, message || name, type, default, if_message
     end
     
     def eql?(other)
-      self.name == other.name && self.message == other.message && self.type == other.type && self.default == other.default
+      self.name == other.name && self.message == other.message && self.type == other.type && self.default == other.default && self.if_message == other.if_message
     end
     alias_method :==, :eql?
     
     def hash
-      @hash ||= HashCalculator.hash(@name, @message, @type, @default)
+      @hash ||= HashCalculator.hash(@name, @message, @type, @default, @if_message)
     end
     
     def to_s
-      @s ||= %|#{self.class.name.split(':').last}(name: #{name.inspect}, message: #{message.inspect}, type: #{type.inspect}, default: #{default.inspect})|
+      @s ||= %|#{self.class.name.split(':').last}(name: #{name.inspect}, message: #{message.inspect}, type: #{type.inspect}, default: #{default.inspect}, if_message: #{if_message.inspect})|
     end
   end
 end

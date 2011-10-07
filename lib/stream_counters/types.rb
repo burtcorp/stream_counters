@@ -50,7 +50,7 @@ module StreamCounters
   end
   
   class Dimension < ImmutableList
-    attr_reader :meta, :metrics
+    attr_reader :meta, :metrics, :base_keys
     alias_method :keys, :elements
     
     def initialize(*args)
@@ -58,6 +58,7 @@ module StreamCounters
       super(*args)
       @meta = (@options[:meta] || []).freeze
       @metrics = (@options[:metrics] || {}).freeze
+      @base_keys = (@options[:base_keys] || []).freeze
     end
     
     def all_keys

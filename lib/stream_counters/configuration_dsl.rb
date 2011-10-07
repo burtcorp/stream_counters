@@ -57,7 +57,7 @@ module StreamCounters
           @dimensions = if @prototype 
             @prototype.dimensions.map do |d| 
               metrics = d.metrics.reject { |name, m| @metrics.key?(name) }
-              DimensionContext.new(*d.keys, :meta => d.meta, :metrics => metrics)
+              DimensionContext.new(*d.keys, :meta => d.meta, :metrics => metrics, :base_keys => @base_keys)
             end
           else
             []
@@ -69,7 +69,7 @@ module StreamCounters
         end
       
         def dimension(*args, &block)
-          dc = DimensionContext.new(*args)
+          dc = DimensionContext.new(*args, :base_keys => @base_keys)
           dc.instance_eval(&block) if block_given?
           @dimensions << dc
         end
@@ -92,6 +92,7 @@ module StreamCounters
           options = options.dup
           options[:metrics] = metrics.merge(self.metrics)
           options[:meta] = self.meta
+          options[:base_keys] = self.base_keys
           Dimension.new(*self.keys, options)
         end
       end
@@ -100,13 +101,14 @@ module StreamCounters
         include Metrics
         include DimensionCreation
       
-        attr_reader :keys
+        attr_reader :keys, :base_keys
       
         def initialize(*args)
           options = if args.last.is_a?(Hash) then args.pop else {} end
           @keys = (args || []).sort
           @meta = options.fetch(:meta, [])
           @metrics = options.fetch(:metrics, {})
+          @base_keys = options.fetch(:base_keys, [])
         end
       
         def meta(*args)

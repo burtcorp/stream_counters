@@ -83,6 +83,11 @@ module StreamCounters
           :conditional_metric => Metric.new(:conditional_metric, :conditional_metric, Metric::DEFAULT_TYPE, Metric::DEFAULT_VALUE, :metric_1?)
         }
       end
+      
+      it 'has base keys assigned to the dimension' do
+        dimension = subject.find_dimension(:dimension_1)
+        dimension.base_keys.should == [:main_key_1, :main_key_2, :main_key_3]
+      end
     end
   
     context 'merging' do

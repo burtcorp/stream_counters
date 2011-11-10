@@ -12,23 +12,44 @@ module StreamCounters
     def count(item)
       base_key_values = @config.base_keys.map { |k| item.send(k) }
       @config.dimensions.each do |dimension|
-        segment_values = dimension.all_keys.map { |dim| item.send(dim) }
-        counters_for_key = (@counters[base_key_values] ||= {})
-        counters_for_dim = (counters_for_key[dimension] ||= {})
-        counters_for_seg = (counters_for_dim[segment_values] ||= metrics_counters_defaults(dimension))
-        dimension.metrics.each do |metric_name, metric|
-          counters_for_seg[metric_name] = reduce(counters_for_seg[metric_name], item, metric) if metric.if_message.nil? || item.send(metric.if_message)
-        end
-        
-        if @specials.any?
-          specials_for_key = (@special_counters[base_key_values] ||= {})
-          specials_for_dim = (specials_for_key[dimension] ||= @specials.map { |special| special.new(base_key_values, dimension) })
-
-          specials_for_dim.each do |special|
-            special.count(item)
-          end
+        segment_value_permutations = product_flatter(dimension.all_keys.map { |dim| item.send(dim) })
+        segment_value_permutations.each do |segment_values|
+          count_segment_values(segment_values, dimension, base_key_values, item)
         end
       end
+    end
+    
+    def count_segment_values(segment_values, dimension, base_key_values, item)
+      counters_for_key = (@counters[base_key_values] ||= {})
+      counters_for_dim = (counters_for_key[dimension] ||= {})
+      counters_for_seg = (counters_for_dim[segment_values] ||= metrics_counters_defaults(dimension))
+      dimension.metrics.each do |metric_name, metric|
+        counters_for_seg[metric_name] = reduce(counters_for_seg[metric_name], item, metric) if metric.if_message.nil? || item.send(metric.if_message)
+      end
+      
+      if @specials.any?
+        specials_for_key = (@special_counters[base_key_values] ||= {})
+        specials_for_dim = (specials_for_key[dimension] ||= @specials.map { |special| special.new(base_key_values, dimension) })
+
+        specials_for_dim.each do |special|
+          special.count(item)
+        end
+      end
+    end
+
+    def product_flatter(values)
+      return [values] if values.reduce(true) {|acc, val| acc && !val.instance_of?(Array) }
+      
+      case values.count
+      when 1
+        values.first.reduce([]) {|acc, val| acc << [val] } #
+      when 2
+        wrapped_in_arrays = values.map {|val| (val.instance_of?(Array)) ? val : [val]}
+        wrapped_in_arrays.first.product(wrapped_in_arrays.last)
+      else
+        raise(ArgumentError, "Not handling flattening of #{values.count} dimensions. Put up a task and we'll see what we can do =)")
+      end
+      
     end
 
     def metrics_counters_defaults(dimension)

@@ -240,6 +240,22 @@ module StreamCounters
           ['world'] => {:some_sum => 4, :another_sum => 32}
         }
       end
+      
+      it 'handles sets as dimension' do
+        counters = Counters.new(@config3)
+        item1 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'foo', :ghi => 'plink', :some_count => 1, :another_number => 0)
+        item2 = Item.new(:xyz => 'first', :abc => 'world', :def => 'bar', :ghi => 'plonk', :some_count => 0, :another_number => 1)
+        item3 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'bar', :ghi => 'plunk', :some_count => 0, :another_number => 0)
+        item4 = Item.new(:xyz => 'first', :abc => ['hello', 'world'], :def => 'foo', :ghi => 'plink', :some_count => 2, :another_number => 0)
+        counters.count(item1)
+        counters.count(item2)
+        counters.count(item3)
+        counters.count(item4)
+        counters.get(['first'], @config3.find_dimension(:abc)).should == {
+          ['hello'] => {:some_sum => 3, :another_sum => 0},
+          ['world'] => {:some_sum => 2, :another_sum => 1}
+        }
+      end
     end
   
     describe '#each' do
@@ -271,6 +287,34 @@ module StreamCounters
           @config2.find_dimension(:def, :ghi)
         ]
       end
+    end
+    
+    describe '#product flatter' do
+      
+      before do
+        @counter = Counters.new(@config1)
+      end
+      it 'wraps single segment values in an array' do
+        @counter.product_flatter(["ad_id_ad_id", "domain_domain_domain"]).should == [["ad_id_ad_id", "domain_domain_domain"]]
+      end
+
+      it 'translates semi-complex segment_values into multiple ordinary ones' do
+        @counter.product_flatter([["mouseEnter", "mouseExit"]]).should == [["mouseEnter"], ["mouseExit"]]
+      end
+      
+      it 'translates complex segment_values into multiple ordinary ones by permutation' do
+        @counter.product_flatter([["mouseEnter", "mouseExit"], 'apa']).should == [["mouseEnter", 'apa'], ["mouseExit", 'apa']]
+      end
+
+      it 'translates complex segment_values into multiple ordinary ones by permutation' do
+        @counter.product_flatter([["mouseEnter", "mouseExit"], ['apa', 'bepa']]).should == [["mouseEnter", 'apa'], ["mouseEnter", 'bepa'], ["mouseExit", 'apa'], ["mouseExit", 'bepa']]
+      end
+
+      it 'tripple is just too much' do
+        expect { @counter.product_flatter([["mouseEnter", "mouseExit"], 'apa', [:a, :b]])}.to raise_error ArgumentError
+      end
+
+
     end
   end
 end

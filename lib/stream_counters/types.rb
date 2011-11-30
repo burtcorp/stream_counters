@@ -61,10 +61,6 @@ module StreamCounters
       @base_keys = (@options[:base_keys] || []).freeze
     end
     
-    def all_keys
-      @all_keys ||= (keys + @meta).freeze
-    end
-    
     def eql?(other)
       if @meta.empty? && @metrics.empty? && (other.is_a?(Array) || (other.meta.empty? && other.metrics.empty?))
       then super(other)

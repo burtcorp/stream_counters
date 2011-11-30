@@ -12,17 +12,18 @@ module StreamCounters
     def count(item)
       base_key_values = @config.base_keys.map { |k| item.send(k) }
       @config.dimensions.each do |dimension|
-        segment_value_permutations = product_flatter(dimension.all_keys.map { |dim| item.send(dim) })
+        segment_value_permutations = product_flatter(dimension.keys.map { |dim| item.send(dim) })
+        meta_values = Hash[dimension.meta.zip(dimension.meta.map { |dim| item.send(dim) })]
         segment_value_permutations.each do |segment_values|
-          count_segment_values(segment_values, dimension, base_key_values, item)
+          count_segment_values(segment_values, meta_values, dimension, base_key_values, item)
         end
       end
     end
     
-    def count_segment_values(segment_values, dimension, base_key_values, item)
+    def count_segment_values(segment_values, meta_values, dimension, base_key_values, item)
       counters_for_key = (@counters[base_key_values] ||= {})
       counters_for_dim = (counters_for_key[dimension] ||= {})
-      counters_for_seg = (counters_for_dim[segment_values] ||= metrics_counters_defaults(dimension))
+      counters_for_seg = (counters_for_dim[segment_values] ||= meta_values.merge(metrics_counters_defaults(dimension)))
       dimension.metrics.each do |metric_name, metric|
         counters_for_seg[metric_name] = reduce(counters_for_seg[metric_name], item, metric) if metric.if_message.nil? || item.send(metric.if_message)
       end
@@ -90,7 +91,7 @@ module StreamCounters
         counters_for_keys.keys.each do |dimension|
           counters_for_dim = merge_specials(@counters, keys, dimension)
           counters_for_dim.keys.each do |segment|
-            data = Hash[@config.base_keys.zip(keys) + dimension.all_keys.zip(segment)].merge!(counters_for_dim[segment])
+            data = Hash[@config.base_keys.zip(keys) + dimension.keys.zip(segment)].merge!(counters_for_dim[segment])
             case block.arity
             when 1 then yield data
             else        yield data, dimension

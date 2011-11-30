@@ -5,13 +5,14 @@ require_relative '../spec_helper'
 
 module StreamCounters
   class Item
-    attr_reader :xyz, :abc, :def, :ghi, :some_count, :another_number
+    attr_reader :xyz, :abc, :def, :ghi, :some_count, :another_number, :meta1
     
     def initialize(values)
       @xyz = values[:xyz]
       @abc = values[:abc]
       @def = values[:def]
       @ghi = values[:ghi]
+      @meta1 = values[:meta1]
       @some_count = values[:some_count]
       @another_number = values[:another_number]
     end
@@ -54,6 +55,14 @@ module StreamCounters
       @config3 = configuration do
         base_keys :xyz
         dimension :abc
+        metric :some_sum, :some_count
+        metric :another_sum, :another_number
+      end
+      @config4 = configuration do
+        base_keys :xyz
+        dimension :abc do
+          meta :meta1
+        end
         metric :some_sum, :some_count
         metric :another_sum, :another_number
       end
@@ -106,6 +115,22 @@ module StreamCounters
         counters.get(['first'], @config3.find_dimension(:abc)).should == {
           ['hello'] => {:some_sum => 2, :another_sum => 0, :xor => 2},
           ['world'] => {:some_sum => 0, :another_sum => 1, :xor => 1}
+        }
+      end
+      
+      it 'handles meta (overrides nil-values if non-nil values exist)' do
+        counters = Counters.new(@config4)
+        item1 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'foo', :ghi => 'plink', :some_count => 1, :another_number => 0, :meta1 => nil)
+        item2 = Item.new(:xyz => 'first', :abc => 'world', :def => 'bar', :ghi => 'plonk', :some_count => 0, :another_number => 1, :meta1 => 'meta_world')
+        item3 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'bar', :ghi => 'plunk', :some_count => 0, :another_number => 0, :meta1 => 'meta_hello')
+        item4 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'foo', :ghi => 'plink', :some_count => 1, :another_number => 0, :meta1 => 'meta_hello')
+        counters.count(item1)
+        counters.count(item2)
+        counters.count(item3)
+        counters.count(item4)
+        counters.get(['first'], @config4.find_dimension(:abc)).should == {
+          ['hello'] => {:some_sum => 2, :another_sum => 0, :meta1 => 'meta_hello'},
+          ['world'] => {:some_sum => 0, :another_sum => 1, :meta1 => 'meta_world'}
         }
       end
       

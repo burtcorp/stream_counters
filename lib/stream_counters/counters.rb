@@ -23,10 +23,11 @@ module StreamCounters
     def count_segment_values(segment_values, meta_values, dimension, base_key_values, item)
       counters_for_key = (@counters[base_key_values] ||= {})
       counters_for_dim = (counters_for_key[dimension] ||= {})
-      counters_for_seg = (counters_for_dim[segment_values] ||= meta_values.merge(metrics_counters_defaults(dimension)))
+      counters_for_seg = (counters_for_dim[segment_values] ||= metrics_counters_defaults(dimension))
       dimension.metrics.each do |metric_name, metric|
         counters_for_seg[metric_name] = reduce(counters_for_seg[metric_name], item, metric) if metric.if_message.nil? || item.send(metric.if_message)
       end
+      counters_for_seg.merge!(meta_values) { |key, v1, v2| v1 || v2  }
       
       if @specials.any?
         specials_for_key = (@special_counters[base_key_values] ||= {})

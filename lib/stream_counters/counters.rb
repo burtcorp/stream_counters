@@ -21,11 +21,16 @@ module StreamCounters
     end
     
     def count_segment_values(segment_values, meta_values, dimension, base_key_values, item)
+      actual_segment_values = segment_values.map { |seg_val| if seg_val.is_a?(Hash) then seg_val.keys.first else seg_val end }
       counters_for_key = (@counters[base_key_values] ||= {})
       counters_for_dim = (counters_for_key[dimension] ||= {})
-      counters_for_seg = (counters_for_dim[segment_values] ||= metrics_counters_defaults(dimension))
+      counters_for_seg = (counters_for_dim[actual_segment_values] ||= metrics_counters_defaults(dimension))
       dimension.metrics.each do |metric_name, metric|
-        counters_for_seg[metric_name] = reduce(counters_for_seg[metric_name], item, metric) if metric.if_message.nil? || item.send(metric.if_message)
+        multiplier = segment_values.reduce(1) do |m, seg_val|
+          m *= seg_val[seg_val.keys.first] if seg_val.is_a?(Hash)
+          m
+        end
+        counters_for_seg[metric_name] = reduce(counters_for_seg[metric_name], item, metric, multiplier) if metric.if_message.nil? || item.send(metric.if_message)
       end
       counters_for_seg.merge!(meta_values) { |key, v1, v2| v1 || v2  }
       
@@ -44,9 +49,23 @@ module StreamCounters
       
       case values.count
       when 1
-        values.first.map { |o| [o] }
+        case values.first
+        when Hash
+          values.first.map { |k, v| [{k => v}] }
+        else
+          values.first.map { |o| [o] }
+        end
       when 2
-        wrapped_in_arrays = values.map {|val| (val.is_a?(Array)) ? val : [val]}
+        wrapped_in_arrays = values.map do |val| 
+          case val
+          when Hash
+            val.map { |k, v| {k => v} }
+          when Enumerable
+            val
+          else
+            [val]
+          end
+        end
         wrapped_in_arrays.first.product(wrapped_in_arrays.last)
       else
         raise(ArgumentError, "Not handling flattening of #{values.count} dimensions. Put up a task and we'll see what we can do =)")
@@ -108,12 +127,20 @@ module StreamCounters
     
   protected
   
-    def reduce(current_value, item, metric)
+    def reduce(current_value, item, metric, multiplier)
       value = item.send(metric.message)
       reducer = @reducers[metric.type]
       if reducer
-      then reducer.call(current_value, value)
-      else current_value + (value || 0)
+        case reducer.arity
+        when 3
+          reducer.call(current_value, value, multiplier)
+        else
+          reducer.call(current_value, value)
+        end
+      else
+        increment = value || 0
+        increment *= multiplier if current_value.is_a?(Numeric)
+        current_value + increment
       end
     end
     

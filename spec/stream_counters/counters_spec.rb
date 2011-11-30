@@ -66,6 +66,14 @@ module StreamCounters
         metric :some_sum, :some_count
         metric :another_sum, :another_number
       end
+     @config5 = configuration do
+        base_keys :xyz
+        dimension :abc
+        dimension :def
+        dimension :abc, :def
+        metric :some_sum, :some_count
+        metric :another_sum, :another_number
+      end
     end
     
     describe '#count/#get' do
@@ -266,7 +274,7 @@ module StreamCounters
         }
       end
       
-      it 'handles sets as dimension' do
+      it 'counts set/list values towards multiple segments' do
         counters = Counters.new(@config3)
         item1 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'foo', :ghi => 'plink', :some_count => 1, :another_number => 0)
         item2 = Item.new(:xyz => 'first', :abc => 'world', :def => 'bar', :ghi => 'plonk', :some_count => 0, :another_number => 1)
@@ -279,6 +287,40 @@ module StreamCounters
         counters.get(['first'], @config3.find_dimension(:abc)).should == {
           ['hello'] => {:some_sum => 3, :another_sum => 0},
           ['world'] => {:some_sum => 2, :another_sum => 1}
+        }
+      end
+      
+      it 'counts hash values towards multiple segments, with the hash values determining the weights' do
+        counters = Counters.new(@config3)
+        item1 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'foo', :ghi => 'plink', :some_count => 1, :another_number => 0)
+        item2 = Item.new(:xyz => 'first', :abc => 'world', :def => 'bar', :ghi => 'plonk', :some_count => 0, :another_number => 1)
+        item3 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'bar', :ghi => 'plunk', :some_count => 0, :another_number => 0)
+        item4 = Item.new(:xyz => 'first', :abc => {'hello' => 0.6, 'world' => 0.5}, :def => 'foo', :ghi => 'plink', :some_count => 2, :another_number => 0)
+        counters.count(item1)
+        counters.count(item2)
+        counters.count(item3)
+        counters.count(item4)
+        counters.get(['first'], @config3.find_dimension(:abc)).should == {
+          ['hello'] => {:some_sum => 1 + 2 * 0.6, :another_sum => 0.0},
+          ['world'] => {:some_sum => 2 * 0.5, :another_sum => 1.0}
+        }
+      end
+
+      it 'counts hash values towards multiple segments, with the hash values determining the weights (with dimension combinations)' do
+        counters = Counters.new(@config5)
+        item1 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'foo', :ghi => 'plink', :some_count => 1, :another_number => 0)
+        item2 = Item.new(:xyz => 'first', :abc => 'world', :def => 'bar', :ghi => 'plonk', :some_count => 0, :another_number => 1)
+        item3 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'bar', :ghi => 'plunk', :some_count => 0, :another_number => 0)
+        item4 = Item.new(:xyz => 'first', :abc => {'hello' => 0.6, 'world' => 0.5}, :def => {'foo' => 0.1, 'bar' => 0.2}, :ghi => 'plink', :some_count => 2, :another_number => 0)
+        counters.count(item1)
+        counters.count(item2)
+        counters.count(item3)
+        counters.count(item4)
+        counters.get(['first'], @config5.find_dimension(:abc, :def)).should == {
+          ['hello', 'foo'] => {:some_sum => 1 + 0.6 * 0.1 * 2, :another_sum => 0.0},
+          ['hello', 'bar'] => {:some_sum => 0.6 * 0.2 * 2,     :another_sum => 0.0},
+          ['world', 'foo'] => {:some_sum => 0.5 * 0.1 * 2,     :another_sum => 0.0},
+          ['world', 'bar'] => {:some_sum => 0.5 * 0.2 * 2,     :another_sum => 1.0}
         }
       end
     end
@@ -315,7 +357,6 @@ module StreamCounters
     end
     
     describe '#product flatter' do
-      
       before do
         @counter = Counters.new(@config1)
       end
@@ -323,23 +364,29 @@ module StreamCounters
         @counter.product_flatter(["ad_id_ad_id", "domain_domain_domain"]).should == [["ad_id_ad_id", "domain_domain_domain"]]
       end
 
-      it 'translates semi-complex segment_values into multiple ordinary ones' do
+      it 'translates semi-complex segment values into multiple ordinary ones' do
         @counter.product_flatter([["mouseEnter", "mouseExit"]]).should == [["mouseEnter"], ["mouseExit"]]
       end
       
-      it 'translates complex segment_values into multiple ordinary ones by permutation' do
+      it 'translates hash segment values into their keys' do
+        @counter.product_flatter([{"mouseEnter" => 0.4, "mouseExit" => 1.0}]).should == [[{"mouseEnter" => 0.4}], [{"mouseExit" => 1.0}]]
+      end
+      
+      it 'translates complex segment values into multiple ordinary ones by permutation' do
         @counter.product_flatter([["mouseEnter", "mouseExit"], 'apa']).should == [["mouseEnter", 'apa'], ["mouseExit", 'apa']]
       end
 
-      it 'translates complex segment_values into multiple ordinary ones by permutation' do
+      it 'translates complex hash segment values into multiple ordinary ones by permutation' do
+        @counter.product_flatter([{"mouseEnter" => 0.4, "mouseExit" => 0.7}, 'apa']).should == [[{"mouseEnter" => 0.4}, 'apa'], [{"mouseExit" => 0.7}, 'apa']]
+      end
+
+      it 'translates complex segment values into multiple ordinary ones by permutation' do
         @counter.product_flatter([["mouseEnter", "mouseExit"], ['apa', 'bepa']]).should == [["mouseEnter", 'apa'], ["mouseEnter", 'bepa'], ["mouseExit", 'apa'], ["mouseExit", 'bepa']]
       end
 
       it 'tripple is just too much' do
         expect { @counter.product_flatter([["mouseEnter", "mouseExit"], 'apa', [:a, :b]])}.to raise_error ArgumentError
       end
-
-
     end
   end
 end

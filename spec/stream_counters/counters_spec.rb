@@ -388,5 +388,59 @@ module StreamCounters
         expect { @counter.product_flatter([["mouseEnter", "mouseExit"], 'apa', [:a, :b]])}.to raise_error ArgumentError
       end
     end
+
+    describe '#empty?' do
+      before do
+        @counters = Counters.new(@config1)
+        @item1 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'foo', :some_count => 1, :another_number =>  3)
+        @item2 = Item.new(:xyz => 'first', :abc => 'world', :def => 'bar', :some_count => 4, :another_number => 99)
+        @item3 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'bar', :some_count => 6, :another_number =>  1)
+        @item4 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'baz', :some_count => 1, :another_number => 45)
+      end
+
+      it 'returns true if no items have been counted' do
+        @counters.should be_empty
+      end
+
+      it 'returns false if there are items' do
+        @counters.count(@item1)
+        @counters.count(@item2)
+        @counters.should_not be_empty
+      end
+
+      it 'returns true if it has just been reset' do
+        @counters.count(@item1)
+        @counters.count(@item2)
+        @counters.reset
+        @counters.should be_empty
+      end
+    end
+
+    describe '#items_counted' do
+      before do
+        @counters = Counters.new(@config1)
+        @item1 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'foo', :some_count => 1, :another_number =>  3)
+        @item2 = Item.new(:xyz => 'first', :abc => 'world', :def => 'bar', :some_count => 4, :another_number => 99)
+        @item3 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'bar', :some_count => 6, :another_number =>  1)
+        @item4 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'baz', :some_count => 1, :another_number => 45)
+      end
+
+      it 'returns the number of items counted' do
+        @counters.count(@item1)
+        @counters.count(@item2)
+        @counters.count(@item3)
+        @counters.count(@item4)
+        @counters.items_counted.should == 4
+      end
+
+      it 'returns the number of items counted since the last reset' do
+        @counters.count(@item1)
+        @counters.count(@item2)
+        @counters.reset
+        @counters.count(@item3)
+        @counters.count(@item4)
+        @counters.items_counted.should == 2
+      end
+    end
   end
 end

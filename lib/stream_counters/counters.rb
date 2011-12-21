@@ -18,6 +18,7 @@ module StreamCounters
           count_segment_values(segment_values, meta_values, dimension, base_key_values, item)
         end
       end
+      @items_counted += 1
     end
     
     def count_segment_values(segment_values, meta_values, dimension, base_key_values, item)
@@ -93,6 +94,7 @@ module StreamCounters
     
     def reset
       @counters = {}
+      @items_counted = 0
       @special_counters.each do |key, special| 
         special.each do | dimension, dimension_counters |
           dimension_counters.each { |dimension_counter| dimension_counter.reset }
@@ -120,13 +122,24 @@ module StreamCounters
         end
       end
     end
-    
+
+    # Deprecated: doesn't actually tell you anthing, returns the number of base keys,
+    # which is an irrellevant number. Use #empty? to check if the counters are empty,
+    # otherwise use #items_counted to see how many times #count has been called.
     def size
       @counters.size
     end
-    
+
+    def empty?
+      @counters.empty?
+    end
+
+    def items_counted
+      @items_counted
+    end
+
   protected
-  
+
     def reduce(current_value, item, metric, multiplier)
       value = item.send(metric.message)
       reducer = @reducers[metric.type]

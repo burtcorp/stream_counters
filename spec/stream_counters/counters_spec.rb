@@ -5,7 +5,7 @@ require_relative '../spec_helper'
 
 module StreamCounters
   class Item
-    attr_reader :xyz, :abc, :def, :ghi, :some_count, :another_number, :meta1
+    attr_reader :xyz, :abc, :def, :ghi, :some_count, :meta1
     
     def initialize(values)
       @xyz = values[:xyz]
@@ -15,6 +15,14 @@ module StreamCounters
       @meta1 = values[:meta1]
       @some_count = values[:some_count]
       @another_number = values[:another_number]
+    end
+    
+    def another_number(segment_values = nil)
+      @another_number
+    end
+    
+    def goodbye(segment_values = nil)
+      segment_values[0] == "goodbye"
     end
   end
   
@@ -274,19 +282,45 @@ module StreamCounters
         }
       end
       
+      it 'sends segment values to if method for verification' do
+        @config1 = configuration do
+          base_keys :xyz
+          dimension :abc
+          metric :some_sum, :some_count, :if => :goodbye
+          metric :another_sum, :some_count, :if => nil
+        end
+        counters = Counters.new(@config1, :reducers => {:boolean => lambda { |acc, x| acc && x }})
+        item1 = Item.new(:xyz => 'first', :abc => ['hello', 'goodbye'], :def => 'foo', :some_count => 1, :another_number => true)
+        item2 = Item.new(:xyz => 'first', :abc => 'world', :def => 'bar', :some_count => 4, :another_number => true)
+        item3 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'bar', :some_count => 6, :another_number => false)
+        item4 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'baz', :some_count => 1, :another_number => true)
+        item5 = Item.new(:xyz => 'first', :abc => 'world', :def => 'bar', :some_count => 28, :another_number => false)
+        counters.count(item1)
+        counters.count(item2)
+        counters.count(item3)
+        counters.count(item4)
+        counters.count(item5)
+        counters.get(['first'], @config1.find_dimension(:abc)).should == {
+          ['hello'] => {:some_sum => 0, :another_sum => 8},
+          ['world'] => {:some_sum => 0, :another_sum => 32},
+          ['goodbye'] => {:some_sum => 1, :another_sum => 1}
+        }
+      end
+      
       it 'counts set/list values towards multiple segments' do
         counters = Counters.new(@config3)
         item1 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'foo', :ghi => 'plink', :some_count => 1, :another_number => 0)
         item2 = Item.new(:xyz => 'first', :abc => 'world', :def => 'bar', :ghi => 'plonk', :some_count => 0, :another_number => 1)
         item3 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'bar', :ghi => 'plunk', :some_count => 0, :another_number => 0)
-        item4 = Item.new(:xyz => 'first', :abc => ['hello', 'world'], :def => 'foo', :ghi => 'plink', :some_count => 2, :another_number => 0)
+        item4 = Item.new(:xyz => 'first', :abc => ['hello', 'world', 'apa'], :def => 'foo', :ghi => 'plink', :some_count => 2, :another_number => 0)
         counters.count(item1)
         counters.count(item2)
         counters.count(item3)
         counters.count(item4)
         counters.get(['first'], @config3.find_dimension(:abc)).should == {
           ['hello'] => {:some_sum => 3, :another_sum => 0},
-          ['world'] => {:some_sum => 2, :another_sum => 1}
+          ['world'] => {:some_sum => 2, :another_sum => 1},
+          ['apa'] =>   {:some_sum => 2, :another_sum => 0}
         }
       end
       

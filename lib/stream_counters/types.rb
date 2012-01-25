@@ -94,8 +94,9 @@ module StreamCounters
     DEFAULT_TYPE = :numeric
     DEFAULT_VALUE = 0
     DEFAULT_IF_MESSAGE = nil
+    DEFAULT_CONTEXT_FOR_IF = nil
     
-    attr_reader :name, :message, :type, :default, :if_message
+    attr_reader :name, :message, :type, :default, :if_message, :context_for_if
     
     def initialize(*args)
       if args.length == 1 && args[0].is_a?(Hash)
@@ -105,6 +106,7 @@ module StreamCounters
         type = hash[:type] || DEFAULT_TYPE
         default = hash[:default] || DEFAULT_VALUE
         if_message = hash[:if_message] || DEFAULT_IF_MESSAGE
+        context_for_if = hash[:context_for_if] || DEFAULT_CONTEXT_FOR_IF
       else
         name, message, type, default, if_message = args
         type ||= DEFAULT_TYPE
@@ -115,16 +117,16 @@ module StreamCounters
     end
     
     def eql?(other)
-      self.name == other.name && self.message == other.message && self.type == other.type && self.default == other.default && self.if_message == other.if_message
+      self.name == other.name && self.message == other.message && self.type == other.type && self.default == other.default && self.if_message == other.if_message && self.context_for_if == other.context_for_if
     end
     alias_method :==, :eql?
     
     def hash
-      @hash ||= HashCalculator.hash(@name, @message, @type, @default, @if_message)
+      @hash ||= HashCalculator.hash(@name, @message, @type, @default, @if_message, @context_for_if)
     end
     
     def to_s
-      @s ||= %|#{self.class.name.split(':').last}(name: #{name.inspect}, message: #{message.inspect}, type: #{type.inspect}, default: #{default.inspect}, if_message: #{if_message.inspect})|
+      @s ||= %|#{self.class.name.split(':').last}(name: #{name.inspect}, message: #{message.inspect}, type: #{type.inspect}, default: #{default.inspect}, if_message: #{if_message.inspect}, context_for_if: #{context_for_if.inspect})|
     end
 
     def to_h

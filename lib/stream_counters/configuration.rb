@@ -51,6 +51,7 @@ module StreamCounters
       m.concat(base_keys.to_a)
       m.concat(metrics.values.map(&:message).flatten)
       m.concat(metrics.values.map(&:if_message).flatten.compact)
+      m.concat(metrics.values.map(&:context_for_if).flatten.compact)
       m.concat(dimensions.map(&:keys).flatten)
       m.concat(dimensions.map(&:meta).flatten)
       m.uniq

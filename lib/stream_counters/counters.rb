@@ -31,7 +31,12 @@ module StreamCounters
           m *= seg_val[seg_val.keys.first] if seg_val.is_a?(Hash)
           m
         end
-        counters_for_seg[metric_name] = reduce(counters_for_seg[metric_name], item, metric, multiplier) if metric.if_message.nil? || item.send(metric.if_message, Hash[dimension.keys.zip(segment_values)])
+        
+        should_count = metric.if_message.nil?
+        should_count ||= item.send(metric.if_message) unless metric.context_for_if
+        should_count ||= item.send(metric.if_message, Hash[dimension.keys.zip(segment_values)]) if metric.context_for_if
+        
+        counters_for_seg[metric_name] = reduce(counters_for_seg[metric_name], item, metric, multiplier) if should_count
       end
       counters_for_seg.merge!(meta_values) { |key, v1, v2| v1 || v2  }
       

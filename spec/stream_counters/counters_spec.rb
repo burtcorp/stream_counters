@@ -17,12 +17,12 @@ module StreamCounters
       @another_number = values[:another_number]
     end
     
-    def another_number(segment_values = nil)
+    def another_number(segment_map = nil)
       @another_number
     end
     
-    def goodbye(segment_values = nil)
-      segment_values[0] == "goodbye"
+    def goodbye(segment_map = nil)
+      segment_map[:abc] == "goodbye"
     end
   end
   

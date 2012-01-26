@@ -39,7 +39,7 @@ module StreamCounters
             options.fetch(:type, Metric::DEFAULT_TYPE),
             options.fetch(:default, Metric::DEFAULT_VALUE),
             options.fetch(:if, Metric::DEFAULT_IF_MESSAGE),
-            options.fetch(:context_for_if, Metric::DEFAULT_CONTEXT_FOR_IF)
+            options.fetch(:if_with_context, Metric::DEFAULT_IF_WITH_CONTEXT)
           )
         end
       

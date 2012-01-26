@@ -286,7 +286,7 @@ module StreamCounters
         @config1 = configuration do
           base_keys :xyz
           dimension :abc
-          metric :some_sum, :some_count, :if => :goodbye, :context_for_if => true
+          metric :some_sum, :some_count, :if_with_context => :goodbye
           metric :another_sum, :some_count, :if => nil
         end
         counters = Counters.new(@config1, :reducers => {:boolean => lambda { |acc, x| acc && x }})

@@ -36,7 +36,7 @@ module StreamCounters
           # metric with conditional
           metric :conditional_metric, :if => :metric_1?
           # metric with conditional and context
-          metric :conditional_metric_with_context, :if => :metric_1?, :context_for_if => true
+          metric :conditional_metric_with_context, :if_with_context => :metric_1?
         end
       end
     
@@ -71,7 +71,7 @@ module StreamCounters
           :metric_x => Metric.new(:metric_x, :metric_x),
           :non_numeric => Metric.new(:non_numeric, :non_numeric, :list, []),
           :conditional_metric => Metric.new(:conditional_metric, :conditional_metric, Metric::DEFAULT_TYPE, Metric::DEFAULT_VALUE, :metric_1?),
-          :conditional_metric_with_context => Metric.new(:conditional_metric_with_context, :conditional_metric_with_context, Metric::DEFAULT_TYPE, Metric::DEFAULT_VALUE, :metric_1?, true)
+          :conditional_metric_with_context => Metric.new(:conditional_metric_with_context, :conditional_metric_with_context, Metric::DEFAULT_TYPE, Metric::DEFAULT_VALUE, Metric::DEFAULT_IF_MESSAGE, :metric_1?)
         }
       end
       
@@ -84,7 +84,7 @@ module StreamCounters
           :metric_x => Metric.new(:metric_x, :metric_x),
           :non_numeric => Metric.new(:non_numeric, :non_numeric, :list, []),
           :conditional_metric => Metric.new(:conditional_metric, :conditional_metric, Metric::DEFAULT_TYPE, Metric::DEFAULT_VALUE, :metric_1?),
-          :conditional_metric_with_context => Metric.new(:conditional_metric_with_context, :conditional_metric_with_context, Metric::DEFAULT_TYPE, Metric::DEFAULT_VALUE, :metric_1?, true)
+          :conditional_metric_with_context => Metric.new(:conditional_metric_with_context, :conditional_metric_with_context, Metric::DEFAULT_TYPE, Metric::DEFAULT_VALUE, Metric::DEFAULT_IF_MESSAGE, :metric_1?)
         }
       end
       

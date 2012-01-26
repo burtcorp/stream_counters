@@ -32,9 +32,9 @@ module StreamCounters
           m
         end
         
-        should_count = metric.if_message.nil?
-        should_count ||= item.send(metric.if_message) unless metric.context_for_if
-        should_count ||= item.send(metric.if_message, Hash[dimension.keys.zip(segment_values)]) if metric.context_for_if
+        should_count = metric.if_message.nil? && metric.if_with_context.nil?
+        should_count ||= metric.if_message && item.send(metric.if_message)
+        should_count ||= metric.if_with_context && item.send(metric.if_with_context, Hash[dimension.keys.zip(segment_values)])
         
         counters_for_seg[metric_name] = reduce(counters_for_seg[metric_name], item, metric, multiplier) if should_count
       end

@@ -76,6 +76,17 @@ module StreamCounters
     def to_s
       @s ||= %|#{self.class.name.split(':').last}(keys: [#{keys.map(&:inspect).join(', ')}], meta: [#{meta.map(&:inspect).join(', ')}], metrics: [#{metrics.values.map(&:inspect).join(', ')}])|
     end
+
+    def to_h
+      hash = {:keys => keys, :base_keys => @base_keys, :metrics => {}}
+      @metrics.each do |k, m|
+        hash[:metrics][k] = m.to_h
+      end
+      unless @meta.empty?
+        hash[:meta] = @meta
+      end
+      hash
+    end
   end
   
   class Metric
@@ -100,6 +111,10 @@ module StreamCounters
     
     def to_s
       @s ||= %|#{self.class.name.split(':').last}(name: #{name.inspect}, message: #{message.inspect}, type: #{type.inspect}, default: #{default.inspect}, if_message: #{if_message.inspect})|
+    end
+
+    def to_h
+      {:name => @name, :message => @message, :type => @type, :default => @default, :if_message => @if_message}
     end
   end
 end

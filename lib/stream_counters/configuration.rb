@@ -28,6 +28,14 @@ module StreamCounters
       raise TypeError, "The class #{cls} is missing the methods #{missing_methods.join(', ')}", [] unless missing_methods.empty?
     end
     
+    def to_h
+      hash = {}
+      @dimensions.each do |d|
+        hash[d.keys] = d.to_h
+      end
+      hash
+    end
+
   protected
   
     def necessary_methods

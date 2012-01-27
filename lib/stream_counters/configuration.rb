@@ -5,10 +5,15 @@ module StreamCounters
   class Configuration
     attr_reader :base_keys, :metrics, :dimensions
     
-    def initialize(base_keys, metrics, dimensions)
-      @base_keys = base_keys
-      @metrics = metrics
-      @dimensions = dimensions
+    def initialize(*args)
+      if args.length == 1 && args[0].is_a?(Hash)
+        deserialize(args[0])
+      else
+        base_keys, metrics, dimensions = args
+        @base_keys = base_keys
+        @metrics = metrics
+        @dimensions = dimensions
+      end
     end
     
     def find_dimension(*keys)
@@ -49,6 +54,23 @@ module StreamCounters
       m.concat(dimensions.map(&:keys).flatten)
       m.concat(dimensions.map(&:meta).flatten)
       m.uniq
+    end
+    
+    def deserialize(hash)
+      @base_keys = Keys.new(*hash[:base_keys])
+      dimensions = hash[:dimensions]
+      @metrics = {}
+      @dimensions = []
+      hash[:metrics].each do |key, metric|
+        @metrics[key] = Metric.new(metric)
+      end
+      hash[:dimensions].each do |key, dimension|
+        options = {:meta => dimension[:meta], :base_keys => dimension[:base_keys], :metrics => {}}
+        dimension[:metrics].each do |mk, m|
+          options[:metrics][mk] = Metric.new(m)
+        end
+        @dimensions << Dimension.new(*key, options)
+      end
     end
   end
 end

@@ -96,7 +96,20 @@ module StreamCounters
     
     attr_reader :name, :message, :type, :default, :if_message
     
-    def initialize(name, message=nil, type=DEFAULT_TYPE, default=DEFAULT_VALUE, if_message=DEFAULT_IF_MESSAGE)
+    def initialize(*args)
+      if args.length == 1 && args[0].is_a?(Hash)
+        hash = args[0]
+        name = hash[:name]
+        message = hash[:message] || name
+        type = hash[:type] || DEFAULT_TYPE
+        default = hash[:default] || DEFAULT_VALUE
+        if_message = hash[:if_message] || DEFAULT_IF_MESSAGE
+      else
+        name, message, type, default, if_message = args
+        type ||= DEFAULT_TYPE
+        default ||= DEFAULT_VALUE
+        if_message ||= DEFAULT_IF_MESSAGE
+      end
       @name, @message, @type, @default, @if_message = name, message || name, type, default, if_message
     end
     

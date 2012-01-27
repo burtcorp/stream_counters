@@ -29,9 +29,12 @@ module StreamCounters
     end
     
     def to_h
-      hash = {}
+      hash = {:base_keys => @base_keys.to_a, :metrics => {}, :dimensions => {}}
+      @metrics.each do |k, m|
+        hash[:metrics][k] = m.to_h
+      end
       @dimensions.each do |d|
-        hash[d.keys] = d.to_h
+        hash[:dimensions][d.keys] = d.to_h
       end
       hash
     end

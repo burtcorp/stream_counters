@@ -122,7 +122,8 @@ module StreamCounters
       end
 
       it 'serializes to a hash' do
-        result = subject.to_h
+        config = subject.to_h
+        dimensions = config[:dimensions]
         metrics = {
           :metric_1s => {:name => :metric_1s, :message => :metric_1?, :type => :predicate, :default => 0, :if_message => nil},
           :metric_2s => {:name => :metric_2s, :message => :metric_2, :type => :numeric, :default => 0, :if_message => nil},
@@ -130,22 +131,24 @@ module StreamCounters
           :non_numeric => {:name => :non_numeric, :message => :non_numeric, :type => :list, :default => [], :if_message => nil},
           :conditional_metric => {:name => :conditional_metric, :message => :conditional_metric, :type => :numeric, :default => 0, :if_message => :metric_1?}
         }
-        result[[:dimension_1]].should == {
+        config[:metrics].should == metrics
+        config[:base_keys].should == [:main_key_1, :main_key_2, :main_key_3]
+        dimensions[[:dimension_1]].should == {
           :keys => [:dimension_1],
           :base_keys => [:main_key_1, :main_key_2, :main_key_3],
           :metrics => metrics
         }
-        result[[:dimension_2]].should == {
+        dimensions[[:dimension_2]].should == {
           :keys => [:dimension_2],
           :base_keys => [:main_key_1, :main_key_2, :main_key_3],
           :metrics => metrics
         }
-        result[[:dimension_1, :dimension_2]].should == {
+        dimensions[[:dimension_1, :dimension_2]].should == {
           :keys => [:dimension_1, :dimension_2],
           :base_keys => [:main_key_1, :main_key_2, :main_key_3],
           :metrics => metrics
         }
-        result[[:dimension_3]].should == {
+        dimensions[[:dimension_3]].should == {
           :keys => [:dimension_3],
           :base_keys => [:main_key_1, :main_key_2, :main_key_3],
           :metrics => metrics.merge(:metric_3s => {:name => :metric_3s, :message => :metric_3?, :type => :numeric, :default => 0, :if_message => nil}),

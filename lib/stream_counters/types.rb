@@ -127,7 +127,9 @@ module StreamCounters
     end
 
     def to_h
-      {:name => @name, :message => @message, :type => @type, :default => @default, :if_message => @if_message}
+      hash = {:name => @name, :message => @message, :type => @type, :default => @default, :if_message => @if_message}
+      hash.delete :default if @default.is_a?(Proc)
+      hash
     end
   end
 end

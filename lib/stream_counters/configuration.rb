@@ -39,7 +39,7 @@ module StreamCounters
         hash[:metrics][k] = m.to_h
       end
       @dimensions.each do |d|
-        hash[:dimensions][d.keys] = d.to_h
+        hash[:dimensions][d.keys.join(" ")] = d.to_h
       end
       hash
     end

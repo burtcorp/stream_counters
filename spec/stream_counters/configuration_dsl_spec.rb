@@ -133,22 +133,22 @@ module StreamCounters
         }
         config[:metrics].should == metrics
         config[:base_keys].should == [:main_key_1, :main_key_2, :main_key_3]
-        dimensions[[:dimension_1]].should == {
+        dimensions["dimension_1"].should == {
           :keys => [:dimension_1],
           :base_keys => [:main_key_1, :main_key_2, :main_key_3],
           :metrics => metrics
         }
-        dimensions[[:dimension_2]].should == {
+        dimensions["dimension_2"].should == {
           :keys => [:dimension_2],
           :base_keys => [:main_key_1, :main_key_2, :main_key_3],
           :metrics => metrics
         }
-        dimensions[[:dimension_1, :dimension_2]].should == {
+        dimensions["dimension_1 dimension_2"].should == {
           :keys => [:dimension_1, :dimension_2],
           :base_keys => [:main_key_1, :main_key_2, :main_key_3],
           :metrics => metrics
         }
-        dimensions[[:dimension_3]].should == {
+        dimensions["dimension_3"].should == {
           :keys => [:dimension_3],
           :base_keys => [:main_key_1, :main_key_2, :main_key_3],
           :metrics => metrics.merge(:metric_3s => {:name => :metric_3s, :message => :metric_3?, :type => :numeric, :default => 0, :if_message => nil}),

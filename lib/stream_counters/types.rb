@@ -85,6 +85,7 @@ module StreamCounters
       unless @meta.empty?
         hash[:meta] = @meta
       end
+      hash.merge!(super) if defined?(super)
       hash
     end
   end

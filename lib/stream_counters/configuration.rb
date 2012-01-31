@@ -58,7 +58,6 @@ module StreamCounters
     
     def deserialize(hash)
       @base_keys = Keys.new(*hash[:base_keys])
-      dimensions = hash[:dimensions]
       @metrics = {}
       @dimensions = []
       hash[:metrics].each do |key, metric|
@@ -69,7 +68,7 @@ module StreamCounters
         dimension[:metrics].each do |mk, m|
           options[:metrics][mk] = Metric.new(m)
         end
-        @dimensions << Dimension.new(*key, options)
+        @dimensions << Dimension.new(*dimension[:keys], options)
       end
     end
   end

@@ -89,6 +89,83 @@ module StreamCounters
         dimension.base_keys.should == [:main_key_1, :main_key_2, :main_key_3]
       end
     end
+
+    context 'serialization' do
+      subject do
+        configuration do
+          base_keys :main_key_1, :main_key_2, :main_key_3
+
+          # single property dimensions
+          dimension :dimension_1
+          dimension :dimension_2
+
+          # multi property dimension
+          dimension :dimension_1, :dimension_2
+
+          # dimension with metadata and extra metrics
+          dimension :dimension_3 do
+            meta :meta_1, :meta_2
+            metric :metric_3s, :message => :metric_3?
+          end
+
+          # metric with explicit :message and :type options
+          metric :metric_1s, :message => :metric_1?, :type => :predicate
+          # metric with implicit :message
+          metric :metric_2s, :metric_2
+          # metric with message name == metric name
+          metric :metric_x
+          # metric with non-numeric type
+          metric :non_numeric, :type => :list, :default => []
+          # metric with conditional
+          metric :conditional_metric, :if => :metric_1?
+        end
+      end
+
+      it 'serializes to a hash' do
+        config = subject.to_h
+        dimensions = config[:dimensions]
+        metrics = {
+          :metric_1s => {:name => :metric_1s, :message => :metric_1?, :type => :predicate, :default => 0, :if_message => nil},
+          :metric_2s => {:name => :metric_2s, :message => :metric_2, :type => :numeric, :default => 0, :if_message => nil},
+          :metric_x => {:name => :metric_x, :message => :metric_x, :type => :numeric, :default => 0, :if_message => nil},
+          :non_numeric => {:name => :non_numeric, :message => :non_numeric, :type => :list, :default => [], :if_message => nil},
+          :conditional_metric => {:name => :conditional_metric, :message => :conditional_metric, :type => :numeric, :default => 0, :if_message => :metric_1?}
+        }
+        config[:metrics].should == metrics
+        config[:base_keys].should == [:main_key_1, :main_key_2, :main_key_3]
+        dimensions["dimension_1"].should == {
+          :keys => [:dimension_1],
+          :base_keys => [:main_key_1, :main_key_2, :main_key_3],
+          :metrics => metrics
+        }
+        dimensions["dimension_2"].should == {
+          :keys => [:dimension_2],
+          :base_keys => [:main_key_1, :main_key_2, :main_key_3],
+          :metrics => metrics
+        }
+        dimensions["dimension_1 dimension_2"].should == {
+          :keys => [:dimension_1, :dimension_2],
+          :base_keys => [:main_key_1, :main_key_2, :main_key_3],
+          :metrics => metrics
+        }
+        dimensions["dimension_3"].should == {
+          :keys => [:dimension_3],
+          :base_keys => [:main_key_1, :main_key_2, :main_key_3],
+          :metrics => metrics.merge(:metric_3s => {:name => :metric_3s, :message => :metric_3?, :type => :numeric, :default => 0, :if_message => nil}),
+          :meta => [:meta_1, :meta_2]
+        }
+      end
+      
+      it 'deserializes to the same config' do
+        hash = {:base_keys=>[:main_key_1, :main_key_2, :main_key_3], :metrics=>{:metric_1s=>{:name=>:metric_1s, :message=>:metric_1?, :type=>:predicate, :default=>0, :if_message=>nil}, :metric_2s=>{:name=>:metric_2s, :message=>:metric_2, :type=>:numeric, :default=>0, :if_message=>nil}, :metric_x=>{:name=>:metric_x, :message=>:metric_x, :type=>:numeric, :default=>0, :if_message=>nil}, :non_numeric=>{:name=>:non_numeric, :message=>:non_numeric, :type=>:list, :default=>[], :if_message=>nil}, :conditional_metric=>{:name=>:conditional_metric, :message=>:conditional_metric, :type=>:numeric, :default=>0, :if_message=>:metric_1?}}, :dimensions=>{"dimension_1"=>{:keys=>[:dimension_1], :base_keys=>[:main_key_1, :main_key_2, :main_key_3], :metrics=>{:metric_1s=>{:name=>:metric_1s, :message=>:metric_1?, :type=>:predicate, :default=>0, :if_message=>nil}, :metric_2s=>{:name=>:metric_2s, :message=>:metric_2, :type=>:numeric, :default=>0, :if_message=>nil}, :metric_x=>{:name=>:metric_x, :message=>:metric_x, :type=>:numeric, :default=>0, :if_message=>nil}, :non_numeric=>{:name=>:non_numeric, :message=>:non_numeric, :type=>:list, :default=>[], :if_message=>nil}, :conditional_metric=>{:name=>:conditional_metric, :message=>:conditional_metric, :type=>:numeric, :default=>0, :if_message=>:metric_1?}}}, "dimension_2"=>{:keys=>[:dimension_2], :base_keys=>[:main_key_1, :main_key_2, :main_key_3], :metrics=>{:metric_1s=>{:name=>:metric_1s, :message=>:metric_1?, :type=>:predicate, :default=>0, :if_message=>nil}, :metric_2s=>{:name=>:metric_2s, :message=>:metric_2, :type=>:numeric, :default=>0, :if_message=>nil}, :metric_x=>{:name=>:metric_x, :message=>:metric_x, :type=>:numeric, :default=>0, :if_message=>nil}, :non_numeric=>{:name=>:non_numeric, :message=>:non_numeric, :type=>:list, :default=>[], :if_message=>nil}, :conditional_metric=>{:name=>:conditional_metric, :message=>:conditional_metric, :type=>:numeric, :default=>0, :if_message=>:metric_1?}}}, "dimension_1 dimension_2"=>{:keys=>[:dimension_1, :dimension_2], :base_keys=>[:main_key_1, :main_key_2, :main_key_3], :metrics=>{:metric_1s=>{:name=>:metric_1s, :message=>:metric_1?, :type=>:predicate, :default=>0, :if_message=>nil}, :metric_2s=>{:name=>:metric_2s, :message=>:metric_2, :type=>:numeric, :default=>0, :if_message=>nil}, :metric_x=>{:name=>:metric_x, :message=>:metric_x, :type=>:numeric, :default=>0, :if_message=>nil}, :non_numeric=>{:name=>:non_numeric, :message=>:non_numeric, :type=>:list, :default=>[], :if_message=>nil}, :conditional_metric=>{:name=>:conditional_metric, :message=>:conditional_metric, :type=>:numeric, :default=>0, :if_message=>:metric_1?}}}, "dimension_3"=>{:keys=>[:dimension_3], :base_keys=>[:main_key_1, :main_key_2, :main_key_3], :metrics=>{:metric_1s=>{:name=>:metric_1s, :message=>:metric_1?, :type=>:predicate, :default=>0, :if_message=>nil}, :metric_2s=>{:name=>:metric_2s, :message=>:metric_2, :type=>:numeric, :default=>0, :if_message=>nil}, :metric_x=>{:name=>:metric_x, :message=>:metric_x, :type=>:numeric, :default=>0, :if_message=>nil}, :non_numeric=>{:name=>:non_numeric, :message=>:non_numeric, :type=>:list, :default=>[], :if_message=>nil}, :conditional_metric=>{:name=>:conditional_metric, :message=>:conditional_metric, :type=>:numeric, :default=>0, :if_message=>:metric_1?}, :metric_3s=>{:name=>:metric_3s, :message=>:metric_3?, :type=>:numeric, :default=>0, :if_message=>nil}}, :meta=>[:meta_1, :meta_2]}}}
+        config = Configuration.new(hash)
+        config.dimensions.each do |dim|
+          subject.find_dimension(*dim.keys).should == dim
+        end
+        config.base_keys.should == subject.base_keys
+        config.metrics.should == subject.metrics
+      end
+    end
   
     context 'merging' do
       subject do

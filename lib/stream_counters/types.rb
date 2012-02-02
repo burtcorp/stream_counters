@@ -76,6 +76,18 @@ module StreamCounters
     def to_s
       @s ||= %|#{self.class.name.split(':').last}(keys: [#{keys.map(&:inspect).join(', ')}], meta: [#{meta.map(&:inspect).join(', ')}], metrics: [#{metrics.values.map(&:inspect).join(', ')}])|
     end
+
+    def to_h
+      hash = {:keys => keys, :base_keys => @base_keys, :metrics => {}}
+      @metrics.each do |k, m|
+        hash[:metrics][k] = m.to_h
+      end
+      unless @meta.empty?
+        hash[:meta] = @meta
+      end
+      hash.merge!(super) if defined?(super)
+      hash
+    end
   end
   
   class Metric
@@ -85,7 +97,20 @@ module StreamCounters
     
     attr_reader :name, :message, :type, :default, :if_message
     
-    def initialize(name, message=nil, type=DEFAULT_TYPE, default=DEFAULT_VALUE, if_message=DEFAULT_IF_MESSAGE)
+    def initialize(*args)
+      if args.length == 1 && args[0].is_a?(Hash)
+        hash = args[0]
+        name = hash[:name]
+        message = hash[:message] || name
+        type = hash[:type] || DEFAULT_TYPE
+        default = hash[:default] || DEFAULT_VALUE
+        if_message = hash[:if_message] || DEFAULT_IF_MESSAGE
+      else
+        name, message, type, default, if_message = args
+        type ||= DEFAULT_TYPE
+        default ||= DEFAULT_VALUE
+        if_message ||= DEFAULT_IF_MESSAGE
+      end
       @name, @message, @type, @default, @if_message = name, message || name, type, default, if_message
     end
     
@@ -100,6 +125,12 @@ module StreamCounters
     
     def to_s
       @s ||= %|#{self.class.name.split(':').last}(name: #{name.inspect}, message: #{message.inspect}, type: #{type.inspect}, default: #{default.inspect}, if_message: #{if_message.inspect})|
+    end
+
+    def to_h
+      hash = {:name => @name, :message => @message, :type => @type, :default => @default, :if_message => @if_message}
+      hash.delete :default if @default.is_a?(Proc)
+      hash
     end
   end
 end

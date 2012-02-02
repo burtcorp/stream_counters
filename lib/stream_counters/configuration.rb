@@ -6,8 +6,8 @@ module StreamCounters
     attr_reader :base_keys, :metrics, :dimensions
     
     def initialize(*args)
-      if args.length == 1 && args[0].is_a?(Hash)
-        deserialize(args[0])
+      if args.length == 1 && args.first.is_a?(Hash)
+        deserialize(args.first)
       else
         base_keys, metrics, dimensions = args
         @base_keys = base_keys

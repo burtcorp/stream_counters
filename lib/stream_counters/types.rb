@@ -94,37 +94,40 @@ module StreamCounters
     DEFAULT_TYPE = :numeric
     DEFAULT_VALUE = 0
     DEFAULT_IF_MESSAGE = nil
+    DEFAULT_IF_WITH_CONTEXT = nil
     
-    attr_reader :name, :message, :type, :default, :if_message
+    attr_reader :name, :message, :type, :default, :if_message, :if_with_context
     
     def initialize(*args)
-      if args.length == 1 && args[0].is_a?(Hash)
-        hash = args[0]
+      if args.length == 1 && args.first.is_a?(Hash)
+        hash = args.first
         name = hash[:name]
         message = hash[:message] || name
         type = hash[:type] || DEFAULT_TYPE
         default = hash[:default] || DEFAULT_VALUE
         if_message = hash[:if_message] || DEFAULT_IF_MESSAGE
+        if_with_context = hash[:if_with_context] || DEFAULT_IF_WITH_CONTEXT
       else
-        name, message, type, default, if_message = args
+        name, message, type, default, if_message, if_with_context = args
         type ||= DEFAULT_TYPE
         default ||= DEFAULT_VALUE
         if_message ||= DEFAULT_IF_MESSAGE
+        if_with_context ||= DEFAULT_IF_WITH_CONTEXT
       end
-      @name, @message, @type, @default, @if_message = name, message || name, type, default, if_message
+      @name, @message, @type, @default, @if_message, @if_with_context = name, message || name, type, default, if_message, if_with_context
     end
     
     def eql?(other)
-      self.name == other.name && self.message == other.message && self.type == other.type && self.default == other.default && self.if_message == other.if_message
+      self.name == other.name && self.message == other.message && self.type == other.type && self.default == other.default && self.if_message == other.if_message && self.if_with_context == other.if_with_context
     end
     alias_method :==, :eql?
     
     def hash
-      @hash ||= HashCalculator.hash(@name, @message, @type, @default, @if_message)
+      @hash ||= HashCalculator.hash(@name, @message, @type, @default, @if_message, @if_with_context)
     end
     
     def to_s
-      @s ||= %|#{self.class.name.split(':').last}(name: #{name.inspect}, message: #{message.inspect}, type: #{type.inspect}, default: #{default.inspect}, if_message: #{if_message.inspect})|
+      @s ||= %|#{self.class.name.split(':').last}(name: #{name.inspect}, message: #{message.inspect}, type: #{type.inspect}, default: #{default.inspect}, if_message: #{if_message.inspect}, if_with_context: #{if_with_context.inspect})|
     end
 
     def to_h

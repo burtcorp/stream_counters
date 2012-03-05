@@ -4,7 +4,9 @@
 module StreamCounters
   module HashCalculator
     def self.hash(*args)
-      args.reduce(0) { |h, p| ((h + p.hash) * 31) % (2**31 - 1) }
+      h = 0
+      args.each { |p| h = ((h + p.hash) * 31) % (2**31 - 1) }
+      h
     end
   end
   

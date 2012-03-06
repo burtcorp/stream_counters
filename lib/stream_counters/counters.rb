@@ -27,7 +27,7 @@ module StreamCounters
       counters_for_seg = @counters[base_key_values][dimension][actual_segment_values]
       multiplier = 1
       segment_values.each do |seg_val|
-        multiplier *= seg_val.each_value { |k| break k } if seg_val.is_a?(Hash)
+        multiplier *= seg_val.each_value { |v| break v } if seg_val.is_a?(Hash)
       end
       counters_for_seg.merge!(dimension.metrics) do |metric_name, old_metric, metric|
         should_count = metric.if_message.nil? && metric.if_with_context.nil?

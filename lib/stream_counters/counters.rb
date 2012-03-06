@@ -13,7 +13,8 @@ module StreamCounters
       base_key_values = @config.base_keys.map { |k| item.send(k) }
       @config.dimensions.each do |dimension|
         segment_value_permutations = product_flatter(dimension.keys.map { |dim| item.send(dim) })
-        meta_values = Hash[dimension.meta.zip(dimension.meta.map { |dim| item.send(dim) })]
+        meta_values = {}
+        dimension.meta.each { |dim| meta_values[dim] = item.send(dim) }
         segment_value_permutations.each do |segment_values|
           count_segment_values(segment_values, meta_values, dimension, base_key_values, item)
         end
@@ -22,29 +23,23 @@ module StreamCounters
     end
     
     def count_segment_values(segment_values, meta_values, dimension, base_key_values, item)
-      actual_segment_values = segment_values.map { |seg_val| if seg_val.is_a?(Hash) then seg_val.keys.first else seg_val end }
-      counters_for_key = (@counters[base_key_values] ||= {})
-      counters_for_dim = (counters_for_key[dimension] ||= {})
-      counters_for_seg = (counters_for_dim[actual_segment_values] ||= metrics_counters_defaults(dimension))
-      dimension.metrics.each do |metric_name, metric|
-        multiplier = segment_values.reduce(1) do |m, seg_val|
-          m *= seg_val[seg_val.keys.first] if seg_val.is_a?(Hash)
-          m
-        end
-        
+      actual_segment_values = segment_values.map { |seg_val| seg_val.is_a?(Hash) ? seg_val.each_key { |k| break k } : seg_val }
+      counters_for_seg = @counters[base_key_values][dimension][actual_segment_values]
+      multiplier = 1
+      segment_values.each do |seg_val|
+        multiplier *= seg_val.each_value { |v| break v } if seg_val.is_a?(Hash)
+      end
+      counters_for_seg.merge!(dimension.metrics) do |metric_name, old_metric, metric|
         should_count = metric.if_message.nil? && metric.if_with_context.nil?
         should_count ||= metric.if_message && item.send(metric.if_message)
         should_count ||= metric.if_with_context && item.send(metric.if_with_context, Hash[dimension.keys.zip(segment_values)])
-        
-        counters_for_seg[metric_name] = reduce(counters_for_seg[metric_name], item, metric, multiplier) if should_count
+
+        should_count ? reduce(old_metric, item, metric, multiplier) : old_metric
       end
       counters_for_seg.merge!(meta_values) { |key, v1, v2| v1 || v2  }
-      
-      if @specials.any?
-        specials_for_key = (@special_counters[base_key_values] ||= {})
-        specials_for_dim = (specials_for_key[dimension] ||= @specials.map { |special| special.new(base_key_values, dimension) })
 
-        specials_for_dim.each do |special|
+      if @specials.any?
+        @special_counters[base_key_values][dimension].each do |special|
           special.count(item)
         end
       end
@@ -62,7 +57,7 @@ module StreamCounters
           values.first.map { |o| [o] }
         end
       when 2
-        wrapped_in_arrays = values.map do |val| 
+        wrapped_in_arrays = values.map do |val|
           case val
           when Hash
             val.map { |k, v| {k => v} }
@@ -80,45 +75,51 @@ module StreamCounters
     end
 
     def metrics_counters_defaults(dimension)
-      metrics_defaults = {}
-      dimension.metrics.each do |name, metric|
-        default = if metric.default.respond_to?(:call)
-                    case metric.default.arity
-                    when 2 then metric.default.call(metric, dimension)
-                    when 1 then metric.default.call(metric)
-                    when 0 then metric.default.call
-                    else raise(ArgumentError, "Wrong number of arguments in default value (#{metric.default.arity})")
-                    end
-                  else
-                    metric.default
-                  end
-        metrics_defaults[name] = default
+      dimension_metrics = dimension.metrics
+      dimension_metrics.merge(dimension_metrics) do |_, metric, _|
+        default = metric.default
+        if default.respond_to?(:call)
+          default =
+            case default.arity
+            when 2 then default.call(metric, dimension)
+            when 1 then default.call(metric)
+            when 0 then default.call
+            else raise(ArgumentError, "Wrong number of arguments in default value (#{default.arity})")
+            end
+        end
+        default
       end
-      metrics_defaults
     end
     
     def reset
-      @counters = {}
+      @counters = Hash.new do |counters_for_key, base_keys|
+        counters_for_key[base_keys] = Hash.new do |counters_for_dim, dimension|
+          counters_for_dim[dimension] = Hash.new { |counters_for_seg, seg| counters_for_seg[seg] = metrics_counters_defaults(dimension) }
+        end
+      end
       @items_counted = 0
-      @special_counters.each do |key, special| 
-        special.each do | dimension, dimension_counters |
-          dimension_counters.each { |dimension_counter| dimension_counter.reset }
+      @special_counters.each_value do |special|
+        special.each_value do |dimension_counters|
+          dimension_counters.each(&:reset)
         end
       end if !@special_counters.nil?
-      @special_counters = {}
+      @special_counters = Hash.new do |special_counters, base_keys|
+        special_counters[base_keys] = Hash.new do |specials_for_key, dimension|
+          specials_for_key[dimension] = @specials.map { |special| special.new(base_keys, dimension) }
+        end
+      end
     end
     
     def get(keys, dimension)
-      merge_specials(@counters, keys, dimension)
+      merge_specials(@counters[keys][dimension], keys, dimension)
     end
     
     def each(&block)
-      @counters.keys.each do |keys|
-        counters_for_keys = @counters[keys]
-        counters_for_keys.keys.each do |dimension|
-          counters_for_dim = merge_specials(@counters, keys, dimension)
-          counters_for_dim.keys.each do |segment|
-            data = Hash[@config.base_keys.zip(keys) + dimension.keys.zip(segment)].merge!(counters_for_dim[segment])
+      @counters.each do |keys, counters_for_keys|
+        base_keys = Hash[@config.base_keys.zip(keys)]
+        counters_for_keys.each do |dimension, counters_for_dim|
+          merge_specials(counters_for_dim, keys, dimension).each do |segment, values|
+            data = Hash[dimension.keys.zip(segment)].merge!(base_keys).merge!(values)
             case block.arity
             when 1 then yield data
             else        yield data, dimension
@@ -163,9 +164,8 @@ module StreamCounters
     end
     
   private
-  
-    def merge_specials(counters, keys, dimension)
-      counters_for_dim = counters[keys][dimension]
+
+    def merge_specials(counters_for_dim, keys, dimension)
       if @specials.any?
         specials_for_dim = @special_counters[keys][dimension]
         counters_for_dim.each do |segment, counter|

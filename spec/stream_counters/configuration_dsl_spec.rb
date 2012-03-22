@@ -125,6 +125,12 @@ module StreamCounters
             metric :metric_3s, :message => :metric_3?
           end
 
+          # boxed dimension
+          dimension :boxed_dimension_4 do
+            metric :metric_3s, :message => :metric_3?
+            boxed_segment :boxed_dimension_4, :dimension_4, [1, 5, 10, 20]
+          end
+
           # metric with explicit :message and :type options
           metric :metric_1s, :message => :metric_1?, :type => :predicate
           # metric with implicit :message
@@ -170,6 +176,13 @@ module StreamCounters
           :base_keys => [:main_key_1, :main_key_2, :main_key_3],
           :metrics => metrics.merge(:metric_3s => {:name => :metric_3s, :message => :metric_3?, :type => :numeric, :default => 0, :if_message => nil}),
           :meta => [:meta_1, :meta_2]
+        }
+        
+        dimensions["boxed_dimension_4"].should == {
+          :keys => [:boxed_dimension_4],
+          :base_keys => [:main_key_1, :main_key_2, :main_key_3],
+          :metrics => metrics.merge(:metric_3s => {:name => :metric_3s, :message => :metric_3?, :type => :numeric, :default => 0, :if_message => nil}),
+          :boxed_segments => [{:name => :boxed_dimension_4, :metric => :dimension_4, :boxes => [1, 5, 10, 20]}]
         }
       end
       

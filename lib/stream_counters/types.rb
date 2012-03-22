@@ -85,6 +85,9 @@ module StreamCounters
       unless @meta.empty?
         hash[:meta] = @meta
       end
+      unless @boxed_segments.empty?
+        hash[:boxed_segments] = @boxed_segments.values.map(&:to_h)
+      end
       hash.merge!(super) if defined?(super)
       hash
     end
@@ -167,5 +170,13 @@ module StreamCounters
       self.name == other.name && self.metric == other.metric && self.boxes == other.boxes
     end
     alias_method :==, :eql?
+
+    def to_h
+      {
+        :name => @name,
+        :metric => @metric,
+        :boxes => @boxes
+      }
+    end
   end
 end

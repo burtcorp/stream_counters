@@ -149,16 +149,20 @@ module StreamCounters
         name = hash[:name]
         metric = hash[:metric]
         boxes = hash[:boxes]
+        scale = hash[:scale]
       else
-        name, metric, boxes = args
+        name, metric, boxes, args = args
+        scale = args[:scale] if args && args[:scale]
       end
       @name = name
       @metric = metric
       @boxes = boxes || []
+      @scale = scale || 1
     end
 
     def box(value)
       return nil if @boxes.empty?
+      value *= @scale if @scale != 1
       return @boxes.first if value < @boxes[1]
       return @boxes.last if value >= @boxes.last
       @boxes.each_cons(2) do |low, high|
@@ -172,11 +176,13 @@ module StreamCounters
     alias_method :==, :eql?
 
     def to_h
-      {
+      hash = {
         :name => @name,
         :metric => @metric,
-        :boxes => @boxes
+        :boxes => @boxes,
       }
+      hash[:scale] = @scale if @scale != 1
+      hash
     end
   end
 end

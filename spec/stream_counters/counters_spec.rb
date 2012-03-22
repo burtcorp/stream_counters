@@ -5,7 +5,7 @@ require_relative '../spec_helper'
 
 module StreamCounters
   class Item
-    attr_reader :xyz, :abc, :def, :ghi, :some_count, :meta1, :number, :boxed_number
+    attr_reader :xyz, :abc, :def, :ghi, :some_count, :meta1, :number, :boxed_number, :big_number
     
     def initialize(values)
       @xyz = values[:xyz]
@@ -17,6 +17,7 @@ module StreamCounters
       @another_number = values[:another_number]
       @number = values[:number]
       @boxed_number = values[:boxed_number]
+      @big_number = @number * 1000 if @number
     end
     
     def another_number
@@ -88,6 +89,9 @@ module StreamCounters
         base_keys :xyz
         dimension :boxed_number do
           boxed_segment :boxed_number, :number, [1, 5, 10]
+        end
+        dimension :boxed_number_scaled do
+          boxed_segment :boxed_number_scaled, :big_number, [1, 5, 10], :scale => 1.0/1000.0
         end
         metric :some_sum, :some_count
         metric :another_sum, :another_number
@@ -335,6 +339,11 @@ module StreamCounters
         counters.count(item6)
         counters.count(item7)
         counters.get(['first'], @boxed_config.find_dimension(:boxed_number)).should == {
+          [1] => {:some_sum => 2, :another_sum => 1},
+          [5] => {:some_sum => 3, :another_sum => 2},
+          [10] => {:some_sum => 1, :another_sum => 1}
+        }
+        counters.get(['first'], @boxed_config.find_dimension(:boxed_number_scaled)).should == {
           [1] => {:some_sum => 2, :another_sum => 1},
           [5] => {:some_sum => 3, :another_sum => 2},
           [10] => {:some_sum => 1, :another_sum => 1}

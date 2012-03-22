@@ -49,7 +49,7 @@ module StreamCounters
   end
   
   class Dimension < ImmutableList
-    attr_reader :meta, :metrics, :base_keys
+    attr_reader :meta, :metrics, :base_keys, :boxed_segments
     alias_method :keys, :elements
     
     def initialize(*args)
@@ -58,6 +58,7 @@ module StreamCounters
       @meta = (@options[:meta] || []).freeze
       @metrics = (@options[:metrics] || {}).freeze
       @base_keys = (@options[:base_keys] || []).freeze
+      @boxed_segments = (@options[:boxed_segments] || []).freeze
     end
     
     def eql?(other)
@@ -134,5 +135,37 @@ module StreamCounters
       hash.delete :default if @default.is_a?(Proc)
       hash
     end
+  end
+
+  class BoxedSegment
+    attr_reader :name, :metric, :boxes
+
+    def initialize(*args)
+      if args.length == 1 && args.first.is_a?(Hash)
+        hash = args.first
+        name = hash[:name]
+        metric = hash[:metric]
+        boxes = hash[:boxes]
+      else
+        name, metric, boxes = args
+      end
+      @name = name
+      @metric = metric
+      @boxes = boxes || []
+    end
+
+    def box(value)
+      return nil if @boxes.empty?
+      return @boxes.first if value < @boxes[1]
+      return @boxes.last if value >= @boxes.last
+      @boxes.each_cons(2) do |low, high|
+        return low if value < high
+      end
+    end
+
+    def eql?(other)
+      self.name == other.name && self.metric == other.metric && self.boxes == other.boxes
+    end
+    alias_method :==, :eql?
   end
 end

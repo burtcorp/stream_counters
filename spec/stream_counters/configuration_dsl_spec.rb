@@ -25,6 +25,12 @@ module StreamCounters
             metric :metric_3s, :message => :metric_3?
           end
 
+          # boxed dimension
+          dimension :boxed_dimension_4 do
+            metric :metric_3s, :message => :metric_3?
+            boxed_segment :boxed_dimension_4, :dimension_4, [1, 5, 10, 20]
+          end
+
           # metric with explicit :message and :type options
           metric :metric_1s, :message => :metric_1?, :type => :predicate
           # metric with implicit :message
@@ -91,6 +97,13 @@ module StreamCounters
       it 'has base keys assigned to the dimension' do
         dimension = subject.find_dimension(:dimension_1)
         dimension.base_keys.should == [:main_key_1, :main_key_2, :main_key_3]
+      end
+
+      it 'handles settings for boxed segments' do
+        dimension = subject.find_dimension(:boxed_dimension_4)
+        dimension.boxed_segments.should == {
+          :boxed_dimension_4 => BoxedSegment.new(:boxed_dimension_4, :dimension_4, [1, 5, 10, 20])
+        }
       end
     end
 

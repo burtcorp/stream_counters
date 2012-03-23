@@ -49,7 +49,7 @@ module StreamCounters
   end
   
   class Dimension < ImmutableList
-    attr_reader :meta, :metrics, :base_keys, :boxed_segments
+    attr_reader :meta, :metrics, :base_keys, :boxed_segments, :discard_nil_segments
     alias_method :keys, :elements
     
     def initialize(*args)
@@ -59,6 +59,7 @@ module StreamCounters
       @metrics = (@options[:metrics] || {}).freeze
       @base_keys = (@options[:base_keys] || []).freeze
       @boxed_segments = (@options[:boxed_segments] || []).freeze
+      @discard_nil_segments = (@options[:discard_nil_segments] || false).freeze
     end
     
     def eql?(other)

@@ -49,7 +49,7 @@ module StreamCounters
   end
   
   class Dimension < ImmutableList
-    attr_reader :meta, :metrics, :base_keys
+    attr_reader :meta, :metrics, :base_keys, :boxed_segments
     alias_method :keys, :elements
     
     def initialize(*args)
@@ -58,6 +58,7 @@ module StreamCounters
       @meta = (@options[:meta] || []).freeze
       @metrics = (@options[:metrics] || {}).freeze
       @base_keys = (@options[:base_keys] || []).freeze
+      @boxed_segments = (@options[:boxed_segments] || []).freeze
     end
     
     def eql?(other)
@@ -83,6 +84,9 @@ module StreamCounters
       end
       unless @meta.empty?
         hash[:meta] = @meta
+      end
+      unless @boxed_segments.empty?
+        hash[:boxed_segments] = @boxed_segments.values.map(&:to_h)
       end
       hash.merge!(super) if defined?(super)
       hash
@@ -132,6 +136,52 @@ module StreamCounters
     def to_h
       hash = {:name => @name, :message => @message, :type => @type, :default => @default, :if_message => @if_message}
       hash.delete :default if @default.is_a?(Proc)
+      hash
+    end
+  end
+
+  class BoxedSegment
+    attr_reader :name, :metric, :boxes
+
+    def initialize(*args)
+      if args.length == 1 && args.first.is_a?(Hash)
+        hash = args.first
+        name = hash[:name]
+        metric = hash[:metric]
+        boxes = hash[:boxes]
+        scale = hash[:scale]
+      else
+        name, metric, boxes, args = args
+        scale = args[:scale] if args && args[:scale]
+      end
+      @name = name
+      @metric = metric
+      @boxes = boxes || []
+      @scale = scale || 1
+    end
+
+    def box(value)
+      return nil if @boxes.empty?
+      value *= @scale if @scale != 1
+      return @boxes.first if value < @boxes[1]
+      return @boxes.last if value >= @boxes.last
+      @boxes.each_cons(2) do |low, high|
+        return low if value < high
+      end
+    end
+
+    def eql?(other)
+      self.name == other.name && self.metric == other.metric && self.boxes == other.boxes
+    end
+    alias_method :==, :eql?
+
+    def to_h
+      hash = {
+        :name => @name,
+        :metric => @metric,
+        :boxes => @boxes,
+      }
+      hash[:scale] = @scale if @scale != 1
       hash
     end
   end

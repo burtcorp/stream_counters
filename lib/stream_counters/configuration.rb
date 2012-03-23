@@ -65,10 +65,13 @@ module StreamCounters
         @metrics[key] = Metric.new(metric)
       end
       hash[:dimensions].each do |key, dimension|
-        options = {:meta => dimension[:meta], :base_keys => dimension[:base_keys], :metrics => {}}
+        options = {:meta => dimension[:meta], :base_keys => dimension[:base_keys], :metrics => {}, :boxed_segments => {}}
         dimension[:metrics].each do |mk, m|
           options[:metrics][mk] = Metric.new(m)
         end
+        dimension[:boxed_segments].each do |bs|
+          options[:boxed_segments][bs[:name]] = BoxedSegment.new(bs)
+        end if dimension[:boxed_segments]
         @dimensions << Dimension.new(*dimension[:keys], options)
       end
     end

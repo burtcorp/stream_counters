@@ -94,6 +94,7 @@ module StreamCounters
           options[:metrics] = metrics.merge(self.metrics)
           options[:meta] = self.meta
           options[:base_keys] = self.base_keys
+          options[:boxed_segments] = self.boxed_segments
           Dimension.new(*self.keys, options)
         end
       end
@@ -102,7 +103,7 @@ module StreamCounters
         include Metrics
         include DimensionCreation
       
-        attr_reader :keys, :base_keys
+        attr_reader :keys, :base_keys, :boxed_segments
       
         def initialize(*args)
           options = if args.last.is_a?(Hash) then args.pop else {} end
@@ -110,6 +111,7 @@ module StreamCounters
           @meta = options.fetch(:meta, [])
           @metrics = options.fetch(:metrics, {})
           @base_keys = options.fetch(:base_keys, [])
+          @boxed_segments = options.fetch(:boxed_segments, {})
         end
       
         def meta(*args)
@@ -118,7 +120,10 @@ module StreamCounters
           else @meta = args
           end
         end
-        
+
+        def boxed_segment(*args)
+          @boxed_segments[args.first] = BoxedSegment.new(*args) if args.length >= 3
+        end
       end
     end
   end

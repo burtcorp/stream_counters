@@ -12,7 +12,16 @@ module StreamCounters
     def count(item)
       base_key_values = @config.base_keys.map { |k| item.send(k) }
       @config.dimensions.each do |dimension|
-        segment_value_permutations = product_flatter(dimension.keys.map { |dim| item.send(dim) })
+        segment_value_permutations = product_flatter(
+          dimension.keys.map do |dim|
+            if dimension.boxed_segments[dim]
+              box_segment = dimension.boxed_segments[dim]
+              box_segment.box(item.send(box_segment.metric))
+            else
+              item.send(dim)
+            end
+          end
+        )
         meta_values = {}
         dimension.meta.each { |dim| meta_values[dim] = item.send(dim) }
         segment_value_permutations.each do |segment_values|

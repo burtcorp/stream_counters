@@ -90,6 +90,12 @@ module StreamCounters
         dimension :abc do
           discard_nil_segments true
         end
+        dimension :abc, :def do
+          discard_nil_segments true
+        end
+        dimension :def do
+          discard_nil_segments false
+        end
         metric :some_sum, :some_count
         metric :another_sum, :another_number
       end
@@ -410,15 +416,30 @@ module StreamCounters
       end
       it 'discards nil segments if configurated' do
         counters = Counters.new(@config6)
-        item1 = Item.new(:xyz => 'first', :abc => 'hello', :some_count => 1, :another_number => 0)
-        item2 = Item.new(:xyz => 'first', :abc => 'world', :some_count => 0, :another_number => 1)
-        item3 = Item.new(:xyz => 'first', :abc => nil, :some_count => 1, :another_number => 1)
+        item1 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'foo', :some_count => 1, :another_number => 0)
+        item2 = Item.new(:xyz => 'first', :abc => 'hello', :def => nil, :some_count => 1, :another_number => 0)
+        item3 = Item.new(:xyz => 'first', :abc => 'world', :def => nil, :some_count => 0, :another_number => 1)
+        item4 = Item.new(:xyz => 'first', :abc => 'world', :def => 'bar', :some_count => 0, :another_number => 1)
+        item5 = Item.new(:xyz => 'first', :abc => nil, :def => nil, :some_count => 1, :another_number => 1)
+        item6 = Item.new(:xyz => 'first', :abc => nil, :def => 'foo', :some_count => 1, :another_number => 1)
         counters.count(item1)
         counters.count(item2)
         counters.count(item3)
+        counters.count(item4)
+        counters.count(item5)
+        counters.count(item6)
         counters.get(['first'], @config6.find_dimension(:abc)).should == {
-          ['hello'] => {:some_sum => 1, :another_sum => 0},
-          ['world'] => {:some_sum => 0, :another_sum => 1}
+          ['hello'] => {:some_sum => 2, :another_sum => 0},
+          ['world'] => {:some_sum => 0, :another_sum => 2}
+        }
+        counters.get(['first'], @config6.find_dimension(:abc, :def)).should == {
+          ['hello', 'foo'] => {:some_sum => 1, :another_sum => 0},
+          ['world', 'bar'] => {:some_sum => 0, :another_sum => 1}
+        }
+        counters.get(['first'], @config6.find_dimension(:def)).should == {
+          ['foo'] => {:some_sum => 2, :another_sum => 1},
+          ['bar'] => {:some_sum => 0, :another_sum => 1},
+          [nil] => {:some_sum => 2, :another_sum => 2}
         }
       end
     end

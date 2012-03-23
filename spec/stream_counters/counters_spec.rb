@@ -85,6 +85,14 @@ module StreamCounters
         metric :some_sum, :some_count
         metric :another_sum, :another_number
       end
+      @config6 = configuration do
+        base_keys :xyz
+        dimension :abc do
+          discard_nil_segments true
+        end
+        metric :some_sum, :some_count
+        metric :another_sum, :another_number
+      end
       @boxed_config = configuration do
         base_keys :xyz
         dimension :boxed_number do
@@ -398,6 +406,19 @@ module StreamCounters
           ['hello', 'bar'] => {:some_sum => 0.6 * 0.2 * 2,     :another_sum => 0.0},
           ['world', 'foo'] => {:some_sum => 0.5 * 0.1 * 2,     :another_sum => 0.0},
           ['world', 'bar'] => {:some_sum => 0.5 * 0.2 * 2,     :another_sum => 1.0}
+        }
+      end
+      it 'discards nil segments if configurated' do
+        counters = Counters.new(@config6)
+        item1 = Item.new(:xyz => 'first', :abc => 'hello', :some_count => 1, :another_number => 0)
+        item2 = Item.new(:xyz => 'first', :abc => 'world', :some_count => 0, :another_number => 1)
+        item3 = Item.new(:xyz => 'first', :abc => nil, :some_count => 1, :another_number => 1)
+        counters.count(item1)
+        counters.count(item2)
+        counters.count(item3)
+        counters.get(['first'], @config6.find_dimension(:abc)).should == {
+          ['hello'] => {:some_sum => 1, :another_sum => 0},
+          ['world'] => {:some_sum => 0, :another_sum => 1}
         }
       end
     end

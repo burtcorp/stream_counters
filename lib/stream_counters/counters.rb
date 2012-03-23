@@ -33,6 +33,7 @@ module StreamCounters
     
     def count_segment_values(segment_values, meta_values, dimension, base_key_values, item)
       actual_segment_values = segment_values.map { |seg_val| seg_val.is_a?(Hash) ? seg_val.each_key { |k| break k } : seg_val }
+      return if dimension.discard_nil_segments && actual_segment_values.include?(nil)
       counters_for_seg = @counters[base_key_values][dimension][actual_segment_values]
       multiplier = 1
       segment_values.each do |seg_val|

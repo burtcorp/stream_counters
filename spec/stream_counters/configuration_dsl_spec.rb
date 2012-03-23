@@ -25,6 +25,12 @@ module StreamCounters
             metric :metric_3s, :message => :metric_3?
           end
 
+          # boxed dimension
+          dimension :boxed_dimension do
+            metric :metric_3s, :message => :metric_3?
+            boxed_segment :boxed_dimension, :boxing_metric, [1, 5, 10, 20]
+          end
+
           # metric with explicit :message and :type options
           metric :metric_1s, :message => :metric_1?, :type => :predicate
           # metric with implicit :message
@@ -92,6 +98,13 @@ module StreamCounters
         dimension = subject.find_dimension(:dimension_1)
         dimension.base_keys.should == [:main_key_1, :main_key_2, :main_key_3]
       end
+
+      it 'handles settings for boxed segments' do
+        dimension = subject.find_dimension(:boxed_dimension)
+        dimension.boxed_segments.should == {
+          :boxed_dimension => BoxedSegment.new(:boxed_dimension, :boxing_metric, [1, 5, 10, 20])
+        }
+      end
     end
 
     context 'serialization' do
@@ -110,6 +123,12 @@ module StreamCounters
           dimension :dimension_3 do
             meta :meta_1, :meta_2
             metric :metric_3s, :message => :metric_3?
+          end
+
+          # boxed dimension
+          dimension :boxed_dimension do
+            metric :metric_3s, :message => :metric_3?
+            boxed_segment :boxed_dimension, :boxing_metric, [1, 5, 10, 20]
           end
 
           # metric with explicit :message and :type options
@@ -158,16 +177,26 @@ module StreamCounters
           :metrics => metrics.merge(:metric_3s => {:name => :metric_3s, :message => :metric_3?, :type => :numeric, :default => 0, :if_message => nil}),
           :meta => [:meta_1, :meta_2]
         }
+        
+        dimensions["boxed_dimension"].should == {
+          :keys => [:boxed_dimension],
+          :base_keys => [:main_key_1, :main_key_2, :main_key_3],
+          :metrics => metrics.merge(:metric_3s => {:name => :metric_3s, :message => :metric_3?, :type => :numeric, :default => 0, :if_message => nil}),
+          :boxed_segments => [{:name => :boxed_dimension, :metric => :boxing_metric, :boxes => [1, 5, 10, 20]}]
+        }
       end
       
       it 'deserializes to the same config' do
-        hash = {:base_keys=>[:main_key_1, :main_key_2, :main_key_3], :metrics=>{:metric_1s=>{:name=>:metric_1s, :message=>:metric_1?, :type=>:predicate, :default=>0, :if_message=>nil}, :metric_2s=>{:name=>:metric_2s, :message=>:metric_2, :type=>:numeric, :default=>0, :if_message=>nil}, :metric_x=>{:name=>:metric_x, :message=>:metric_x, :type=>:numeric, :default=>0, :if_message=>nil}, :non_numeric=>{:name=>:non_numeric, :message=>:non_numeric, :type=>:list, :default=>[], :if_message=>nil}, :conditional_metric=>{:name=>:conditional_metric, :message=>:conditional_metric, :type=>:numeric, :default=>0, :if_message=>:metric_1?}}, :dimensions=>{"dimension_1"=>{:keys=>[:dimension_1], :base_keys=>[:main_key_1, :main_key_2, :main_key_3], :metrics=>{:metric_1s=>{:name=>:metric_1s, :message=>:metric_1?, :type=>:predicate, :default=>0, :if_message=>nil}, :metric_2s=>{:name=>:metric_2s, :message=>:metric_2, :type=>:numeric, :default=>0, :if_message=>nil}, :metric_x=>{:name=>:metric_x, :message=>:metric_x, :type=>:numeric, :default=>0, :if_message=>nil}, :non_numeric=>{:name=>:non_numeric, :message=>:non_numeric, :type=>:list, :default=>[], :if_message=>nil}, :conditional_metric=>{:name=>:conditional_metric, :message=>:conditional_metric, :type=>:numeric, :default=>0, :if_message=>:metric_1?}}}, "dimension_2"=>{:keys=>[:dimension_2], :base_keys=>[:main_key_1, :main_key_2, :main_key_3], :metrics=>{:metric_1s=>{:name=>:metric_1s, :message=>:metric_1?, :type=>:predicate, :default=>0, :if_message=>nil}, :metric_2s=>{:name=>:metric_2s, :message=>:metric_2, :type=>:numeric, :default=>0, :if_message=>nil}, :metric_x=>{:name=>:metric_x, :message=>:metric_x, :type=>:numeric, :default=>0, :if_message=>nil}, :non_numeric=>{:name=>:non_numeric, :message=>:non_numeric, :type=>:list, :default=>[], :if_message=>nil}, :conditional_metric=>{:name=>:conditional_metric, :message=>:conditional_metric, :type=>:numeric, :default=>0, :if_message=>:metric_1?}}}, "dimension_1 dimension_2"=>{:keys=>[:dimension_1, :dimension_2], :base_keys=>[:main_key_1, :main_key_2, :main_key_3], :metrics=>{:metric_1s=>{:name=>:metric_1s, :message=>:metric_1?, :type=>:predicate, :default=>0, :if_message=>nil}, :metric_2s=>{:name=>:metric_2s, :message=>:metric_2, :type=>:numeric, :default=>0, :if_message=>nil}, :metric_x=>{:name=>:metric_x, :message=>:metric_x, :type=>:numeric, :default=>0, :if_message=>nil}, :non_numeric=>{:name=>:non_numeric, :message=>:non_numeric, :type=>:list, :default=>[], :if_message=>nil}, :conditional_metric=>{:name=>:conditional_metric, :message=>:conditional_metric, :type=>:numeric, :default=>0, :if_message=>:metric_1?}}}, "dimension_3"=>{:keys=>[:dimension_3], :base_keys=>[:main_key_1, :main_key_2, :main_key_3], :metrics=>{:metric_1s=>{:name=>:metric_1s, :message=>:metric_1?, :type=>:predicate, :default=>0, :if_message=>nil}, :metric_2s=>{:name=>:metric_2s, :message=>:metric_2, :type=>:numeric, :default=>0, :if_message=>nil}, :metric_x=>{:name=>:metric_x, :message=>:metric_x, :type=>:numeric, :default=>0, :if_message=>nil}, :non_numeric=>{:name=>:non_numeric, :message=>:non_numeric, :type=>:list, :default=>[], :if_message=>nil}, :conditional_metric=>{:name=>:conditional_metric, :message=>:conditional_metric, :type=>:numeric, :default=>0, :if_message=>:metric_1?}, :metric_3s=>{:name=>:metric_3s, :message=>:metric_3?, :type=>:numeric, :default=>0, :if_message=>nil}}, :meta=>[:meta_1, :meta_2]}}}
+        hash = {:base_keys=>[:main_key_1, :main_key_2, :main_key_3], :metrics=>{:metric_1s=>{:name=>:metric_1s, :message=>:metric_1?, :type=>:predicate, :default=>0, :if_message=>nil}, :metric_2s=>{:name=>:metric_2s, :message=>:metric_2, :type=>:numeric, :default=>0, :if_message=>nil}, :metric_x=>{:name=>:metric_x, :message=>:metric_x, :type=>:numeric, :default=>0, :if_message=>nil}, :non_numeric=>{:name=>:non_numeric, :message=>:non_numeric, :type=>:list, :default=>[], :if_message=>nil}, :conditional_metric=>{:name=>:conditional_metric, :message=>:conditional_metric, :type=>:numeric, :default=>0, :if_message=>:metric_1?}}, :dimensions=>{"dimension_1"=>{:keys=>[:dimension_1], :base_keys=>[:main_key_1, :main_key_2, :main_key_3], :metrics=>{:metric_1s=>{:name=>:metric_1s, :message=>:metric_1?, :type=>:predicate, :default=>0, :if_message=>nil}, :metric_2s=>{:name=>:metric_2s, :message=>:metric_2, :type=>:numeric, :default=>0, :if_message=>nil}, :metric_x=>{:name=>:metric_x, :message=>:metric_x, :type=>:numeric, :default=>0, :if_message=>nil}, :non_numeric=>{:name=>:non_numeric, :message=>:non_numeric, :type=>:list, :default=>[], :if_message=>nil}, :conditional_metric=>{:name=>:conditional_metric, :message=>:conditional_metric, :type=>:numeric, :default=>0, :if_message=>:metric_1?}}}, "dimension_2"=>{:keys=>[:dimension_2], :base_keys=>[:main_key_1, :main_key_2, :main_key_3], :metrics=>{:metric_1s=>{:name=>:metric_1s, :message=>:metric_1?, :type=>:predicate, :default=>0, :if_message=>nil}, :metric_2s=>{:name=>:metric_2s, :message=>:metric_2, :type=>:numeric, :default=>0, :if_message=>nil}, :metric_x=>{:name=>:metric_x, :message=>:metric_x, :type=>:numeric, :default=>0, :if_message=>nil}, :non_numeric=>{:name=>:non_numeric, :message=>:non_numeric, :type=>:list, :default=>[], :if_message=>nil}, :conditional_metric=>{:name=>:conditional_metric, :message=>:conditional_metric, :type=>:numeric, :default=>0, :if_message=>:metric_1?}}}, "dimension_1 dimension_2"=>{:keys=>[:dimension_1, :dimension_2], :base_keys=>[:main_key_1, :main_key_2, :main_key_3], :metrics=>{:metric_1s=>{:name=>:metric_1s, :message=>:metric_1?, :type=>:predicate, :default=>0, :if_message=>nil}, :metric_2s=>{:name=>:metric_2s, :message=>:metric_2, :type=>:numeric, :default=>0, :if_message=>nil}, :metric_x=>{:name=>:metric_x, :message=>:metric_x, :type=>:numeric, :default=>0, :if_message=>nil}, :non_numeric=>{:name=>:non_numeric, :message=>:non_numeric, :type=>:list, :default=>[], :if_message=>nil}, :conditional_metric=>{:name=>:conditional_metric, :message=>:conditional_metric, :type=>:numeric, :default=>0, :if_message=>:metric_1?}}}, "dimension_3"=>{:keys=>[:dimension_3], :base_keys=>[:main_key_1, :main_key_2, :main_key_3], :metrics=>{:metric_1s=>{:name=>:metric_1s, :message=>:metric_1?, :type=>:predicate, :default=>0, :if_message=>nil}, :metric_2s=>{:name=>:metric_2s, :message=>:metric_2, :type=>:numeric, :default=>0, :if_message=>nil}, :metric_x=>{:name=>:metric_x, :message=>:metric_x, :type=>:numeric, :default=>0, :if_message=>nil}, :non_numeric=>{:name=>:non_numeric, :message=>:non_numeric, :type=>:list, :default=>[], :if_message=>nil}, :conditional_metric=>{:name=>:conditional_metric, :message=>:conditional_metric, :type=>:numeric, :default=>0, :if_message=>:metric_1?}, :metric_3s=>{:name=>:metric_3s, :message=>:metric_3?, :type=>:numeric, :default=>0, :if_message=>nil}}, :meta=>[:meta_1, :meta_2]}, "boxed_dimension"=>{:keys=>[:boxed_dimension], :base_keys=>[:main_key_1, :main_key_2, :main_key_3], :metrics=>{:metric_1s=>{:name=>:metric_1s, :message=>:metric_1?, :type=>:predicate, :default=>0, :if_message=>nil}, :metric_2s=>{:name=>:metric_2s, :message=>:metric_2, :type=>:numeric, :default=>0, :if_message=>nil}, :metric_x=>{:name=>:metric_x, :message=>:metric_x, :type=>:numeric, :default=>0, :if_message=>nil}, :non_numeric=>{:name=>:non_numeric, :message=>:non_numeric, :type=>:list, :default=>[], :if_message=>nil}, :conditional_metric=>{:name=>:conditional_metric, :message=>:conditional_metric, :type=>:numeric, :default=>0, :if_message=>:metric_1?}, :metric_3s=>{:name=>:metric_3s, :message=>:metric_3?, :type=>:numeric, :default=>0, :if_message=>nil}}, :boxed_segments => [{:name => :boxed_dimension, :metric => :boxing_metric, :boxes => [1, 5, 10, 20]}]}}}
+
+
         config = Configuration.new(hash)
         config.dimensions.each do |dim|
           subject.find_dimension(*dim.keys).should == dim
         end
         config.base_keys.should == subject.base_keys
         config.metrics.should == subject.metrics
+        config.find_dimension(:boxed_dimension).boxed_segments.should == subject.find_dimension(:boxed_dimension).boxed_segments
       end
     end
   

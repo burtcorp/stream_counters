@@ -95,6 +95,7 @@ module StreamCounters
           options[:meta] = self.meta
           options[:base_keys] = self.base_keys
           options[:boxed_segments] = self.boxed_segments
+          options[:discard_nil_segments] = self.discard_nil_segments
           Dimension.new(*self.keys, options)
         end
       end
@@ -112,6 +113,7 @@ module StreamCounters
           @metrics = options.fetch(:metrics, {})
           @base_keys = options.fetch(:base_keys, [])
           @boxed_segments = options.fetch(:boxed_segments, {})
+          @discard_nil_segments = options.fetch(:discard_nil_segments, false)
         end
       
         def meta(*args)
@@ -123,6 +125,13 @@ module StreamCounters
 
         def boxed_segment(*args)
           @boxed_segments[args.first] = BoxedSegment.new(*args) if args.length >= 3
+        end
+
+        def discard_nil_segments(*args)
+          if args.empty?
+          then @discard_nil_segments
+          else @discard_nil_segments = !!args.first
+          end
         end
       end
     end

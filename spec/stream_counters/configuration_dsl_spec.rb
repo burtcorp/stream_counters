@@ -23,6 +23,7 @@ module StreamCounters
           dimension :dimension_3 do
             meta :meta_1, :meta_2
             metric :metric_3s, :message => :metric_3?
+            discard_nil_segments true
           end
 
           # boxed dimension
@@ -67,6 +68,7 @@ module StreamCounters
       it 'captures dimensions (with meta)' do
         dimension = subject.find_dimension(:dimension_3)
         dimension.meta.should == [:meta_1, :meta_2]
+        dimension.discard_nil_segments.should == true
       end
       
       it 'captures the default metrics' do

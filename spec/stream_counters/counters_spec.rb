@@ -77,7 +77,7 @@ module StreamCounters
         metric :some_sum, :some_count
         metric :another_sum, :another_number
       end
-     @config5 = configuration do
+      @config5 = configuration do
         base_keys :xyz
         dimension :abc
         dimension :def

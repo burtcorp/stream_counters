@@ -4,7 +4,9 @@
 module StreamCounters
   module HashCalculator
     def self.hash(*args)
-      args.reduce(0) { |h, p| ((h + p.hash) * 31) % (2**31 - 1) }
+      h = 0
+      args.each { |p| h = (h & 33554431) * 31 ^ p.hash }
+      h
     end
   end
   
@@ -16,12 +18,9 @@ module StreamCounters
     def initialize(*args)
       @elements = args.freeze
     end
-    
-    def each
-      if block_given?
-      then @elements.each(&Proc.new)
-      else @elements.each
-      end
+
+    def each(&block)
+      @elements.each(&block)
     end
 
     def eql?(other)
@@ -70,7 +69,7 @@ module StreamCounters
     alias_method :==, :eql?
     
     def hash
-      @hash ||= HashCalculator.hash(@meta + @metrics.keys + @metrics.values)
+      @hash ||= HashCalculator.hash(@meta, @metrics)
     end
     
     def to_s

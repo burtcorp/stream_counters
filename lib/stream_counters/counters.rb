@@ -12,16 +12,17 @@ module StreamCounters
     def count(item)
       base_key_values = @config.base_keys.map { |k| item.send(k) }
       @config.dimensions.each do |dimension|
-        segment_value_permutations = product_flatter(
-          dimension.keys.map do |dim|
-            if dimension.boxed_segments[dim]
-              box_segment = dimension.boxed_segments[dim]
-              box_segment.box(item.send(box_segment.metric))
-            else
-              item.send(dim)
-            end
+        dimension_segments = []
+        dimension.keys.each do |dim|
+          if dimension.boxed_segments[dim]
+            box_segment = dimension.boxed_segments[dim]
+            box_segment_value = box_segment.box(item.send(box_segment.metric))
+            dimension_segments << box_segment_value if box_segment_value
+          else
+            dimension_segments << item.send(dim)
           end
-        )
+        end
+        segment_value_permutations = product_flatter(dimension_segments)
         meta_values = {}
         dimension.meta.each { |dim| meta_values[dim] = item.send(dim) }
         segment_value_permutations.each do |segment_values|
@@ -33,7 +34,7 @@ module StreamCounters
     
     def count_segment_values(segment_values, meta_values, dimension, base_key_values, item)
       actual_segment_values = segment_values.map { |seg_val| seg_val.is_a?(Hash) ? seg_val.each_key { |k| break k } : seg_val }
-      return if dimension.discard_nil_segments && actual_segment_values.include?(nil)
+      return if dimension.discard_nil_segments && actual_segment_values.include?(nil) || actual_segment_values.empty?
       counters_for_seg = @counters[base_key_values][dimension][actual_segment_values]
       multiplier = 1
       segment_values.each do |seg_val|

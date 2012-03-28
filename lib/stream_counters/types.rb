@@ -162,7 +162,7 @@ module StreamCounters
     end
 
     def box(value)
-      return nil if @boxes.empty?
+      return nil if @boxes.empty? || value.nil?
       value *= @scale if @scale != 1
       return @boxes.first if value < @boxes[1]
       return @boxes.last if value >= @boxes.last

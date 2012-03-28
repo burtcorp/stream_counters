@@ -345,6 +345,7 @@ module StreamCounters
         item6 = Item.new(:xyz => 'first', :number => 11, :some_count => 1, :another_number => 1)
         item6 = Item.new(:xyz => 'first', :number => 11, :some_count => 1, :another_number => 1)
         item7 = Item.new(:xyz => 'first', :number => 7, :boxed_number => 7, :some_count => 1, :another_number => 0)
+        item8 = Item.new(:xyz => 'first', :number => nil, :boxed_number => 7, :some_count => 1, :another_number => 0)
         counters.count(item1)
         counters.count(item2)
         counters.count(item3)
@@ -352,6 +353,7 @@ module StreamCounters
         counters.count(item5)
         counters.count(item6)
         counters.count(item7)
+        counters.count(item8)
         counters.get(['first'], @boxed_config.find_dimension(:boxed_number)).should == {
           [1] => {:some_sum => 2, :another_sum => 1},
           [5] => {:some_sum => 3, :another_sum => 2},

@@ -523,8 +523,8 @@ module StreamCounters
         @counter.product_flatter([["mouseEnter", "mouseExit"], ['apa', 'bepa']]).should == [["mouseEnter", 'apa'], ["mouseEnter", 'bepa'], ["mouseExit", 'apa'], ["mouseExit", 'bepa']]
       end
 
-      it 'tripple is just too much' do
-        expect { @counter.product_flatter([["mouseEnter", "mouseExit"], 'apa', [:a, :b]])}.to raise_error ArgumentError
+      it 'handles triple dimensions as well' do
+        @counter.product_flatter([["mouseEnter", "mouseExit"], 'apa', ['a', 'b']]).should == [%w[mouseEnter apa a], %w[mouseEnter apa b], %w[mouseExit apa a], %w[mouseExit apa b]]
       end
     end
 

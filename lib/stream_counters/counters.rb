@@ -61,31 +61,18 @@ module StreamCounters
 
     def product_flatter(values)
       return [values] if values.none? { |e| e.is_a?(Enumerable) }
-      
-      case values.count
-      when 1
-        case values.first
+
+      mid = values.map do |val|
+        case val
         when Hash
-          values.first.map { |k, v| [{k => v}] }
+          val.map { |k,v| {k => v} }
+        when Enumerable
+          val.to_a
         else
-          values.first.map { |o| [o] }
+          [val]
         end
-      when 2
-        wrapped_in_arrays = values.map do |val|
-          case val
-          when Hash
-            val.map { |k, v| {k => v} }
-          when Enumerable
-            val
-          else
-            [val]
-          end
-        end
-        wrapped_in_arrays.first.product(wrapped_in_arrays.last)
-      else
-        raise(ArgumentError, "Not handling flattening of #{values.count} dimensions. Put up a task and we'll see what we can do =)")
       end
-      
+      mid.shift.product(*mid)
     end
 
     def metrics_counters_defaults(dimension)

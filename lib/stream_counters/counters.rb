@@ -10,7 +10,8 @@ module StreamCounters
     end
     
     def count(item)
-      base_key_values = @config.base_keys.map { |k| item.send(k) }
+      all_base_key_values = @config.base_keys.map { |k| item.send(k) }
+      base_key_value_permuations = product_flatter(all_base_key_values)
       @config.dimensions.each do |dimension|
         dimension_segments = []
         dimension.keys.each do |dim|
@@ -25,8 +26,10 @@ module StreamCounters
         segment_value_permutations = product_flatter(dimension_segments)
         meta_values = {}
         dimension.meta.each { |dim| meta_values[dim] = item.send(dim) }
-        segment_value_permutations.each do |segment_values|
-          count_segment_values(segment_values, meta_values, dimension, base_key_values, item)
+        base_key_value_permuations.each do |base_key_values|
+          segment_value_permutations.each do |segment_values|
+            count_segment_values(segment_values, meta_values, dimension, base_key_values, item)
+          end
         end
       end
       @items_counted += 1

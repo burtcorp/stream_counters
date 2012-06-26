@@ -382,6 +382,24 @@ module StreamCounters
           ['apa'] =>   {:some_sum => 2, :another_sum => 0}
         }
       end
+
+      it 'counts set/list base key values towards multiple segments' do
+        counters = Counters.new(@config3)
+        item1 = Item.new(:xyz => %w[first second], :abc => 'hello', :def => 'foo', :ghi => 'plink', :some_count => 1, :another_number => 0)
+        item2 = Item.new(:xyz => %w[first third], :abc => 'world', :def => 'bar', :ghi => 'plonk', :some_count => 0, :another_number => 1)
+        counters.count(item1)
+        counters.count(item2)
+        counters.get(['first'], @config3.find_dimension(:abc)).should == {
+          ['hello'] => {:some_sum => 1, :another_sum => 0},
+          ['world'] => {:some_sum => 0, :another_sum => 1},
+        }
+        counters.get(['second'], @config3.find_dimension(:abc)).should == {
+          ['hello'] => {:some_sum => 1, :another_sum => 0},
+        }
+        counters.get(['third'], @config3.find_dimension(:abc)).should == {
+          ['world'] => {:some_sum => 0, :another_sum => 1},
+        }
+      end
       
       it 'counts hash values towards multiple segments, with the hash values determining the weights' do
         counters = Counters.new(@config3)

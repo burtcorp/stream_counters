@@ -40,9 +40,10 @@ module StreamCounters
     end
     alias_method :to_a, :to_ary
     
-    def to_s
-      @s ||= %|#{self.class.name.split(':').last}([#{@elements.map(&:inspect).join(', ')}])|
+    def inspect
+      @i ||= %|#{self.class.name.split(':').last}([#{@elements.map(&:inspect).join(', ')}])|
     end
+    alias_method :to_s, :inspect
   end
   
   class Keys < ImmutableList
@@ -74,9 +75,10 @@ module StreamCounters
       @hash ||= HashCalculator.hash(@meta, @metrics)
     end
     
-    def to_s
-      @s ||= %|#{self.class.name.split(':').last}(keys: [#{keys.map(&:inspect).join(', ')}], meta: [#{meta.map(&:inspect).join(', ')}], metrics: [#{metrics.values.map(&:inspect).join(', ')}])|
+    def inspect
+      @i ||= %|#{self.class.name.split(':').last}(keys: [#{keys.map(&:inspect).join(', ')}], meta: [#{meta.map(&:inspect).join(', ')}], metrics: [#{metrics.values.map(&:inspect).join(', ')}])|
     end
+    alias_method :to_s, :inspect
 
     def to_h
       hash = {:keys => keys, :base_keys => @base_keys, :metrics => {}}
@@ -130,9 +132,10 @@ module StreamCounters
       @hash ||= HashCalculator.hash(@name, @message, @type, @default, @if_message, @if_with_context)
     end
     
-    def to_s
-      @s ||= %|#{self.class.name.split(':').last}(name: #{name.inspect}, message: #{message.inspect}, type: #{type.inspect}, default: #{default.inspect}, if_message: #{if_message.inspect}, if_with_context: #{if_with_context.inspect})|
+    def inspect
+      @i ||= %|#{self.class.name.split(':').last}(name: #{name.inspect}, message: #{message.inspect}, type: #{type.inspect}, default: #{default.inspect}, if_message: #{if_message.inspect}, if_with_context: #{if_with_context.inspect})|
     end
+    alias_method :to_s, :inspect
 
     def to_h
       hash = {:name => @name, :message => @message, :type => @type, :default => @default, :if_message => @if_message}

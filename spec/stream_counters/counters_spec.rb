@@ -28,25 +28,25 @@ module StreamCounters
       segment_map[:abc] == "goodbye"
     end
   end
-  
+
+  class Special
+    def initialize(keys, dimension)
+      @dimension = dimension
+      reset
+    end
+    def reset; @values = {}; end
+    def count(item)
+      segment = @dimension.keys.map { |key| item.send(key) }
+      value_for_seg = (@values[segment] ||= {:xor => 0})
+      value_for_seg[:xor] += 1 if (item.some_count == 1) ^ (item.another_number == 1)
+    end
+    def value(segment)
+      @values[segment]
+    end
+  end
+
   describe Counters do
     include ConfigurationDsl
-
-    class Special
-      def initialize(keys, dimension)
-        @dimension = dimension
-        reset
-      end
-      def reset; @values = {}; end
-      def count(item)
-        segment = @dimension.keys.map { |key| item.send(key) }
-        value_for_seg = (@values[segment] ||= {:xor => 0})
-        value_for_seg[:xor] += 1 if (item.some_count == 1) ^ (item.another_number == 1)
-      end
-      def value(segment)
-        @values[segment]
-      end
-    end
 
     before do
       @config1 = configuration do

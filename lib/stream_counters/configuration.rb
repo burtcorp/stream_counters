@@ -23,6 +23,10 @@ module StreamCounters
     def create_counters(options={})
       Counters.new(self, options)
     end
+
+    def create_exploder(options={})
+      Exploder.new(self, options)
+    end
     
     def validate_class(cls)
       (necessary_methods - cls.instance_methods).sort

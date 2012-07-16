@@ -2,6 +2,7 @@
 
 
 module StreamCounters
+  autoload :Exploder, 'stream_counters/counters'
   autoload :Counters, 'stream_counters/counters'
   autoload :Configuration, 'stream_counters/configuration'
   autoload :ConfigurationDsl, 'stream_counters/configuration_dsl'

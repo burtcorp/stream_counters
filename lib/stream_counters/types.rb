@@ -87,7 +87,7 @@ module StreamCounters
         hash[:meta] = @meta
       end
       unless @boxed_segments.empty?
-        hash[:boxed_segments] = @boxed_segments.values.map(&:to_h)
+        hash[:boxed_segments] = @boxed_segments.is_a?(Hash) ? @boxed_segments.values.map(&:to_h) :  @boxed_segments
       end
       hash.merge!(super) if defined?(super)
       hash

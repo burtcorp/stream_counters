@@ -18,7 +18,7 @@ module StreamCounters
           if dimension.boxed_segments[dim]
             box_segment = dimension.boxed_segments[dim]
             box_segment_value = box_segment.box(item.send(box_segment.metric))
-            dimension_segments << box_segment_value if box_segment_value
+            dimension_segments << box_segment_value
           else
             dimension_segments << item.send(dim)
           end

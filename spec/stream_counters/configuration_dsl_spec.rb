@@ -32,6 +32,12 @@ module StreamCounters
             boxed_segment :boxed_dimension, :boxing_metric, [1, 5, 10, 20]
           end
 
+          # combined, boxed dimension
+          dimension :dimension_1, :boxed_dimension do
+            metric :metric_3s, :message => :metric_3?
+            boxed_segment :boxed_dimension, :boxing_metric, [1, 5, 10, 20]
+          end
+
           # metric with explicit :message and :type options
           metric :metric_1s, :message => :metric_1?, :type => :predicate
           # metric with implicit :message
@@ -106,6 +112,14 @@ module StreamCounters
         dimension.boxed_segments.should == {
           :boxed_dimension => BoxedSegment.new(:boxed_dimension, :boxing_metric, [1, 5, 10, 20])
         }
+      end
+
+      it 'handles settings for combination of non-boxed and boxed segments' do
+        dimension = subject.find_dimension(:boxed_dimension, :dimension_1)
+        dimension.boxed_segments.should == {
+          :boxed_dimension => BoxedSegment.new(:boxed_dimension, :boxing_metric, [1, 5, 10, 20])
+        }
+        dimension.keys.should == [:boxed_dimension, :dimension_1]
       end
     end
 

@@ -104,8 +104,15 @@ module StreamCounters
         dimension :boxed_number do
           boxed_segment :boxed_number, :number, [1, 5, 10]
         end
+        dimension :def, :boxed_number do
+          boxed_segment :boxed_number, :number, [1, 5, 10]
+        end
         dimension :boxed_number_scaled do
           boxed_segment :boxed_number_scaled, :big_number, [1, 5, 10], :scale => 1.0/1000.0
+        end
+        dimension :def, :boxed_number_scaled do
+          boxed_segment :boxed_number_scaled, :big_number, [1, 5, 10], :scale => 1.0/1000.0
+          discard_nil_segments true
         end
         metric :some_sum, :some_count
         metric :another_sum, :another_number
@@ -335,35 +342,76 @@ module StreamCounters
         }
       end
 
-      it 'boxes segments of asked, overrides already boxed numbers' do
-        counters = Counters.new(@boxed_config)
-        item1 = Item.new(:xyz => 'first', :number => 0.5, :some_count => 1, :another_number => 0)
-        item2 = Item.new(:xyz => 'first', :number => 2, :some_count => 1, :another_number => 1)
-        item3 = Item.new(:xyz => 'first', :number => 5, :some_count => 0, :another_number => 1)
-        item4 = Item.new(:xyz => 'first', :number => 6, :some_count => 1, :another_number => 1)
-        item5 = Item.new(:xyz => 'first', :number => 7, :some_count => 1, :another_number => 0)
-        item6 = Item.new(:xyz => 'first', :number => 11, :some_count => 1, :another_number => 1)
-        item6 = Item.new(:xyz => 'first', :number => 11, :some_count => 1, :another_number => 1)
-        item7 = Item.new(:xyz => 'first', :number => 7, :boxed_number => 7, :some_count => 1, :another_number => 0)
-        item8 = Item.new(:xyz => 'first', :number => nil, :boxed_number => 7, :some_count => 1, :another_number => 0)
-        counters.count(item1)
-        counters.count(item2)
-        counters.count(item3)
-        counters.count(item4)
-        counters.count(item5)
-        counters.count(item6)
-        counters.count(item7)
-        counters.count(item8)
-        counters.get(['first'], @boxed_config.find_dimension(:boxed_number)).should == {
-          [1] => {:some_sum => 2, :another_sum => 1},
-          [5] => {:some_sum => 3, :another_sum => 2},
-          [10] => {:some_sum => 1, :another_sum => 1}
-        }
-        counters.get(['first'], @boxed_config.find_dimension(:boxed_number_scaled)).should == {
-          [1] => {:some_sum => 2, :another_sum => 1},
-          [5] => {:some_sum => 3, :another_sum => 2},
-          [10] => {:some_sum => 1, :another_sum => 1}
-        }
+      describe '#boxed_segment' do
+        before do
+          @boxed_counters = Counters.new(@boxed_config)
+          item1 = Item.new(:xyz => 'first', :def => 'second', :number => 0.5, :some_count => 1, :another_number => 0)
+          item2 = Item.new(:xyz => 'first', :def => 'second', :number => 2, :some_count => 1, :another_number => 1)
+          item3 = Item.new(:xyz => 'first', :def => 'second', :number => 5, :some_count => 0, :another_number => 1)
+          item4 = Item.new(:xyz => 'first', :def => 'third', :number => 6, :some_count => 1, :another_number => 1)
+          item5 = Item.new(:xyz => 'first', :def => 'second', :number => 7, :some_count => 1, :another_number => 0)
+          item6 = Item.new(:xyz => 'first', :def => 'second', :number => 11, :some_count => 1, :another_number => 1)
+          item7 = Item.new(:xyz => 'first', :def => 'third', :number => 11, :some_count => 1, :another_number => 1)
+          item8 = Item.new(:xyz => 'first', :def => 'second', :number => nil, :some_count => 1, :another_number => 0)
+          item9 = Item.new(:xyz => 'first', :def => 'second', :number => 7, :some_count => 1, :another_number => 0)
+          @boxed_counters.count(item1)
+          @boxed_counters.count(item2)
+          @boxed_counters.count(item3)
+          @boxed_counters.count(item4)
+          @boxed_counters.count(item5)
+          @boxed_counters.count(item6)
+          @boxed_counters.count(item7)
+          @boxed_counters.count(item8)
+          @boxed_counters.count(item9)
+        end
+
+        it 'handles a single key dimension' do
+          @boxed_counters.get(['first'], @boxed_config.find_dimension(:boxed_number)).should == {
+            [1] => {:some_sum => 2, :another_sum => 1},
+            [5] => {:some_sum => 3, :another_sum => 2},
+            [10] => {:some_sum => 2, :another_sum => 2},
+            [nil] => {:some_sum => 1, :another_sum => 0}
+          }
+        end
+        it 'overrides already present values on boxed key destination' do
+          item1 = Item.new(:xyz => 'first', :def => 'second', :number => 7, :boxed_number => 7, :some_count => 1, :another_number => 0)
+          item2 = Item.new(:xyz => 'first', :def => 'second', :number => nil, :boxed_number => 7, :some_count => 1, :another_number => 0)
+          @boxed_counters.count(item1)
+          @boxed_counters.count(item2)
+          @boxed_counters.get(['first'], @boxed_config.find_dimension(:boxed_number)).should == {
+            [1] => {:some_sum => 2, :another_sum => 1},
+            [5] => {:some_sum => 4, :another_sum => 2},
+            [10] => {:some_sum => 2, :another_sum => 2},
+            [nil] => {:some_sum => 2, :another_sum => 0}
+          }
+        end
+        it 'scaled boxing base number if asked' do
+          @boxed_counters.get(['first'], @boxed_config.find_dimension(:boxed_number_scaled)).should == {
+            [1] => {:some_sum => 2, :another_sum => 1},
+            [5] => {:some_sum => 3, :another_sum => 2},
+            [10] => {:some_sum => 2, :another_sum => 2},
+            [nil] => {:some_sum => 1, :another_sum => 0}
+          }
+        end
+        it 'handles multi key dimensions' do
+          @boxed_counters.get(['first'], @boxed_config.find_dimension(:boxed_number, :def)).should == {
+            [1, 'second']  => {:some_sum => 2, :another_sum => 1},
+            [5, 'second']  => {:some_sum => 2, :another_sum => 1},
+            [5, 'third']   => {:some_sum => 1, :another_sum => 1},
+            [10, 'second'] => {:some_sum => 1, :another_sum => 1},
+            [nil, 'second']=> {:some_sum => 1, :another_sum => 0},
+            [10, 'third']  => {:some_sum => 1, :another_sum => 1}
+          }
+        end
+        it 'handles multi key dimensions with discard nil' do
+          @boxed_counters.get(['first'], @boxed_config.find_dimension(:boxed_number_scaled, :def)).should == {
+            [1, 'second']  => {:some_sum => 2, :another_sum => 1},
+            [5, 'second']  => {:some_sum => 2, :another_sum => 1},
+            [5, 'third']   => {:some_sum => 1, :another_sum => 1},
+            [10, 'second'] => {:some_sum => 1, :another_sum => 1},
+            [10, 'third']  => {:some_sum => 1, :another_sum => 1}
+          }
+        end
       end
       
       it 'counts set/list values towards multiple segments' do

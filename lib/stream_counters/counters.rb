@@ -112,21 +112,23 @@ module StreamCounters
     end
     
     def get(keys, dimension)
-      merge_specials(@counters[dimension][keys], keys, dimension)
+      merge_specials(@counters[dimension][keys], @special_counters[dimension][keys])
     end
     
     def each(&block)
-      @counters.each do |dimension, counters_for_dim|
-        counters_for_dim.each do |keys, counters_for_keys|
+      @counters.merge!(@special_counters) do |dimension, counters_for_dim, specials_for_dim|
+        counters_for_dim.merge!(specials_for_dim) do |keys, counters_for_keys, specials_for_keys|
           base_keys = Hash[@config.base_keys.zip(keys)]
-          merge_specials(counters_for_keys, keys, dimension).each do |segment, values|
+          merge_specials(counters_for_keys, specials_for_keys).each do |segment, values|
             data = Hash[dimension.keys.zip(segment)].merge!(base_keys).merge!(values)
             case block.arity
             when 1 then yield data
             else        yield data, dimension
             end
           end
+          counters_for_keys
         end
+        counters_for_dim
       end
     end
 
@@ -166,9 +168,8 @@ module StreamCounters
     
   private
 
-    def merge_specials(counters_for_keys, keys, dimension)
+    def merge_specials(counters_for_keys, specials_for_keys)
       if @specials.any?
-        specials_for_keys = @special_counters[dimension][keys]
         counters_for_keys.each do |segment, counter|
           specials_for_keys.each do |special|
             counter.merge!(special.value(segment))

@@ -38,7 +38,7 @@ module StreamCounters
     def count_segment_values(segment_values, meta_values, dimension, base_key_values, item)
       actual_segment_values = segment_values.map { |seg_val| seg_val.is_a?(Hash) ? seg_val.each_key { |k| break k } : seg_val }
       return if dimension.discard_nil_segments && actual_segment_values.include?(nil) || actual_segment_values.empty?
-      counters_for_seg = @counters[base_key_values][dimension][actual_segment_values]
+      counters_for_seg = @counters[dimension][base_key_values][actual_segment_values]
       multiplier = 1
       segment_values.each do |seg_val|
         multiplier *= seg_val.each_value { |v| break v } if seg_val.is_a?(Hash)
@@ -53,7 +53,7 @@ module StreamCounters
       counters_for_seg.merge!(meta_values) { |key, v1, v2| v1 || v2  }
 
       if @specials.any?
-        @special_counters[base_key_values][dimension].each do |special|
+        @special_counters[dimension][base_key_values].each do |special|
           special.count(item)
         end
       end
@@ -93,33 +93,41 @@ module StreamCounters
     end
     
     def reset
-      @counters = Hash.new do |counters_for_key, base_keys|
-        counters_for_key[base_keys] = Hash.new do |counters_for_dim, dimension|
-          counters_for_dim[dimension] = Hash.new { |counters_for_seg, seg| counters_for_seg[seg] = metrics_counters_defaults(dimension) }
+      @counters = Hash.new do |counters_for_dim, dimension|
+        counters_for_dim[dimension] = Hash.new do |counters_for_keys, base_keys|
+          counters_for_keys[base_keys] = Hash.new { |counters_for_seg, seg| counters_for_seg[seg] = metrics_counters_defaults(dimension) }
         end
       end
       @items_counted = 0
-      @special_counters.each_value do |special|
-        special.each_value do |dimension_counters|
-          dimension_counters.each(&:reset)
+      @special_counters.each_value do |dimension_counters|
+        dimension_counters.each_value do |base_keys_counters|
+          base_keys_counters.each(&:reset)
         end
       end if !@special_counters.nil?
-      @special_counters = Hash.new do |special_counters, base_keys|
-        special_counters[base_keys] = Hash.new do |specials_for_key, dimension|
-          specials_for_key[dimension] = @specials.map { |special| special.new(base_keys, dimension) }
+      @special_counters = Hash.new do |special_counters, dimension|
+        special_counters[dimension] = Hash.new do |specials_for_dim, base_keys|
+          specials_for_dim[base_keys] = @specials.map { |special| special.new(base_keys, dimension) }
         end
       end
     end
     
     def get(keys, dimension)
-      merge_specials(@counters[keys][dimension], keys, dimension)
+      merge_specials(@counters[dimension][keys], @special_counters[dimension][keys])
     end
     
     def each(&block)
-      @counters.each do |keys, counters_for_keys|
-        base_keys = Hash[@config.base_keys.zip(keys)]
-        counters_for_keys.each do |dimension, counters_for_dim|
-          merge_specials(counters_for_dim, keys, dimension).each do |segment, values|
+      @counters.merge!(@special_counters) do |dimension, counters_for_dim, specials_for_dim|
+        counters_for_dim.merge!(specials_for_dim) do |keys, counters_for_keys, specials_for_keys|
+          merge_specials(counters_for_keys, specials_for_keys)
+          counters_for_keys
+        end
+        counters_for_dim
+      end
+
+      @counters.each do |dimension, counters_for_dim|
+        counters_for_dim.each do |keys, counters_for_keys|
+          base_keys = Hash[@config.base_keys.zip(keys)]
+          counters_for_keys.each do |segment, values|
             data = Hash[dimension.keys.zip(segment)].merge!(base_keys).merge!(values)
             case block.arity
             when 1 then yield data
@@ -130,7 +138,7 @@ module StreamCounters
       end
     end
 
-    # Deprecated: doesn't actually tell you anthing, returns the number of base keys,
+    # Deprecated: doesn't actually tell you anthing, returns the number of dimensions
     # which is an irrellevant number. Use #empty? to check if the counters are empty,
     # otherwise use #items_counted to see how many times #count has been called.
     def size
@@ -166,16 +174,15 @@ module StreamCounters
     
   private
 
-    def merge_specials(counters_for_dim, keys, dimension)
+    def merge_specials(counters_for_keys, specials_for_keys)
       if @specials.any?
-        specials_for_dim = @special_counters[keys][dimension]
-        counters_for_dim.each do |segment, counter|
-          specials_for_dim.each do |special|
+        counters_for_keys.each do |segment, counter|
+          specials_for_keys.each do |special|
             counter.merge!(special.value(segment))
           end
         end
       end
-      counters_for_dim
+      counters_for_keys
     end
   end
 end

@@ -514,6 +514,35 @@ module StreamCounters
   
     describe '#each' do
       it 'yields each key/dimension/segment combination' do
+        counters = Counters.new(@config1)
+        item1 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'foo', :some_count => 1, :another_number =>  3)
+        item2 = Item.new(:xyz => 'first', :abc => 'world', :def => 'bar', :some_count => 4, :another_number => 99)
+        item3 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'bar', :some_count => 6, :another_number =>  1)
+        item4 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'baz', :some_count => 1, :another_number => 45)
+        counters.count(item1)
+        counters.count(item2)
+        counters.count(item3)
+        counters.count(item4)
+        datas = []
+        dimensions = []
+        counters.each { |data, dimension| datas << data; dimensions << dimension }
+        datas.should == [
+          {:xyz => "first", :abc => "hello", :some_sum => 8,  :another_sum => 49 },
+          {:xyz => "first", :abc => "world", :some_sum => 4,  :another_sum => 99 },
+          {:xyz => "first", :def => "foo",   :some_sum => 1,  :another_sum => 3  },
+          {:xyz => "first", :def => "bar",   :some_sum => 10, :another_sum => 100},
+          {:xyz => "first", :def => "baz",   :some_sum => 1,  :another_sum => 45 }
+        ]
+        dimensions.should == [
+          @config1.find_dimension(:abc),
+          @config1.find_dimension(:abc),
+          @config1.find_dimension(:def),
+          @config1.find_dimension(:def),
+          @config1.find_dimension(:def)
+        ]
+      end
+
+      it 'yields each key/dimension/segment combination with specials' do
         counters = Counters.new(@config2, :specials => [Special])
         item1 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'foo', :ghi => 'plink', :some_count => 1, :another_number => 0)
         item2 = Item.new(:xyz => 'first', :abc => 'world', :def => 'bar', :ghi => 'plonk', :some_count => 0, :another_number => 1)

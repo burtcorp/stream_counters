@@ -1,3 +1,5 @@
 --color
 --format doc
---drb
+--tty
+-Ilib
+spec

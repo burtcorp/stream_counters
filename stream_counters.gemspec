@@ -16,8 +16,6 @@ Gem::Specification.new do |s|
   s.description = %q{}
 
   s.rubyforge_project = 'stream_counters'
-  
-  s.add_development_dependency 'rspec'
 
   s.files         = `git ls-files`.split("\n")
   # s.test_files    = `git ls-files -- {test,spec,features}/*`.split("\n")

@@ -9,13 +9,13 @@ module StreamCounters
     end
 
     def explode(item)
-      base_key_pairs = Hash[@config.base_keys.map { |k| [k, item.send(k)] }]
+      base_key_pairs = Hash[@config.base_keys.map { |k| [k, item.send(k.to_sym)] }]
       return {} if check_nils(base_key_pairs, @config.base_keys)
       @config.dimensions.each_with_object({}) do |dimension, segments|
         segment = base_key_pairs.dup
-        dimension.keys.each { |k| segment[k] = item.send(k) }
+        dimension.keys.each { |k| segment[k] = item.send(k.to_sym) }
         next if dimension.discard_nil_segments && check_nils(segment, dimension.keys)
-        dimension.meta.each { |m| segment[m] = item.send(m) }
+        dimension.meta.each { |m| segment[m] = item.send(m.to_sym) }
         dimension.metrics.each { |m, metric| segment[m] = calculate_metric(dimension, metric, item) || default_value(dimension, metric) }
         permuted_segments = permute_segment(dimension, segment)
         permuted_segments.each do |permuted_segment|
@@ -29,7 +29,7 @@ module StreamCounters
     private
 
     def calculate_metric(dimension, metric, item)
-      value = item.send(metric.message)
+      value = item.send(metric.message.to_sym)
       value = reduce_value(dimension, metric, value) if value
       value
     end
@@ -80,11 +80,11 @@ module StreamCounters
       dimension.metrics.each do |m, metric|
         reset_to_default = begin
           if metric.if_message
-            !item.send(metric.if_message)
+            !item.send(metric.if_message.to_sym)
           elsif metric.if_with_context
             permuted_segment_keys = segment.dup
             dimension.metrics.each { |m, _| permuted_segment_keys.delete(m) }
-            !item.send(metric.if_with_context, permuted_segment_keys)
+            !item.send(metric.if_with_context.to_sym, permuted_segment_keys)
           else
             false
           end

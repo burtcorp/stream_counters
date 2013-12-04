@@ -35,12 +35,12 @@ module StreamCounters
     describe '#validate_class' do
       it 'returns an array of the methods that are missing (1)' do
         methods = @config.validate_class(TestClass1)
-        methods.should == [:xyz, :abc, :def, :ghi, :some_count, :another_number, :cond].sort
+        methods.should == ['xyz', 'abc', 'def', 'ghi', 'some_count', 'another_number', 'cond'].sort
       end
       
       it 'returns an array of the methods that are missing (2)' do
         methods = @config.validate_class(TestClass2)
-        methods.should == [:abc, :def, :ghi, :another_number, :cond].sort
+        methods.should == ['abc', 'def', 'ghi', 'another_number', 'cond'].sort
       end
 
       it 'returns an empty array when no methods are missing' do

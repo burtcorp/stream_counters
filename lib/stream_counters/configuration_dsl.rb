@@ -33,7 +33,7 @@ module StreamCounters
           else
             options = args.shift || {}
           end
-          @metrics[name] = Metric.new(
+          @metrics[name.to_s] = Metric.new(
             name, 
             message || options.fetch(:message, name),
             options.fetch(:type, Metric::DEFAULT_TYPE),
@@ -58,7 +58,7 @@ module StreamCounters
           @dimensions = if @prototype 
             @prototype.dimensions.map do |d| 
               metrics = d.metrics.reject { |name, m| @metrics.key?(name) }
-              DimensionContext.new(*d.keys, :meta => d.meta, :metrics => metrics, :base_keys => @base_keys)
+              DimensionContext.new(*d.keys, 'meta' => d.meta, 'metrics' => metrics, 'base_keys' => @base_keys)
             end
           else
             []
@@ -70,7 +70,7 @@ module StreamCounters
         end
       
         def dimension(*args, &block)
-          dc = DimensionContext.new(*args, :base_keys => @base_keys)
+          dc = DimensionContext.new(*args, 'base_keys' => @base_keys)
           dc.instance_eval(&block) if block_given?
           @dimensions << dc
         end
@@ -91,11 +91,11 @@ module StreamCounters
       module DimensionCreation
         def to_dimension(metrics, options={})
           options = options.dup
-          options[:metrics] = metrics.merge(self.metrics)
-          options[:meta] = self.meta
-          options[:base_keys] = self.base_keys
-          options[:boxed_segments] = self.boxed_segments
-          options[:discard_nil_segments] = self.discard_nil_segments
+          options['metrics'] = metrics.merge(self.metrics)
+          options['meta'] = self.meta
+          options['base_keys'] = self.base_keys
+          options['boxed_segments'] = self.boxed_segments
+          options['discard_nil_segments'] = self.discard_nil_segments
           Dimension.new(*self.keys, options)
         end
       end
@@ -108,23 +108,23 @@ module StreamCounters
       
         def initialize(*args)
           options = if args.last.is_a?(Hash) then args.pop else {} end
-          @keys = (args || []).sort
-          @meta = options.fetch(:meta, [])
-          @metrics = options.fetch(:metrics, {})
-          @base_keys = options.fetch(:base_keys, [])
-          @boxed_segments = options.fetch(:boxed_segments, {})
-          @discard_nil_segments = options.fetch(:discard_nil_segments, false)
+          @keys = (args.map(&:to_s) || []).sort
+          @meta = options.fetch('meta', [])
+          @metrics = options.fetch('metrics', {})
+          @base_keys = options.fetch('base_keys', [])
+          @boxed_segments = options.fetch('boxed_segments', {})
+          @discard_nil_segments = options.fetch('discard_nil_segments', false)
         end
       
         def meta(*args)
           if args.empty?
           then @meta
-          else @meta = args
+          else @meta = args.map(&:to_s)
           end
         end
 
         def boxed_segment(*args)
-          @boxed_segments[args.first] = BoxedSegment.new(*args) if args.length >= 3
+          @boxed_segments[args.first.to_s] = BoxedSegment.new(*args) if args.length >= 3
         end
 
         def discard_nil_segments(*args)

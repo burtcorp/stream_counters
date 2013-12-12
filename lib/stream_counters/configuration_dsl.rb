@@ -96,7 +96,7 @@ module StreamCounters
           options['base_keys'] = self.base_keys
           options['boxed_segments'] = self.boxed_segments
           options['discard_nil_segments'] = self.discard_nil_segments
-          Dimension.new(*self.keys, options)
+          Dimension.new(*self.keys.dup, options)
         end
       end
     

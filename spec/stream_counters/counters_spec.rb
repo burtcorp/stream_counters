@@ -29,7 +29,7 @@ module StreamCounters
     end
   end
 
-  class Special
+  class CounterSpecial
     def initialize(keys, dimension)
       @dimension = dimension
       reset
@@ -154,7 +154,7 @@ module StreamCounters
       end
     
       it 'delegates special metrics' do
-        counters = Counters.new(@config3, :specials => [Special])
+        counters = Counters.new(@config3, :specials => [CounterSpecial])
         item1 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'foo', :ghi => 'plink', :some_count => 1, :another_number => 0)
         item2 = Item.new(:xyz => 'first', :abc => 'world', :def => 'bar', :ghi => 'plonk', :some_count => 0, :another_number => 1)
         item3 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'bar', :ghi => 'plunk', :some_count => 0, :another_number => 0)
@@ -543,7 +543,7 @@ module StreamCounters
       end
 
       it 'yields each key/dimension/segment combination with specials' do
-        counters = Counters.new(@config2, :specials => [Special])
+        counters = Counters.new(@config2, :specials => [CounterSpecial])
         item1 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'foo', :ghi => 'plink', :some_count => 1, :another_number => 0)
         item2 = Item.new(:xyz => 'first', :abc => 'world', :def => 'bar', :ghi => 'plonk', :some_count => 0, :another_number => 1)
         item3 = Item.new(:xyz => 'first', :abc => 'hello', :def => 'bar', :ghi => 'plunk', :some_count => 0, :another_number => 0)

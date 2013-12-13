@@ -83,7 +83,8 @@ module StreamCounters
           Configuration.new(
             Keys.new(*@base_keys),
             metrics,
-            dimensions.values
+            dimensions.values,
+            self
           )
         end
       end

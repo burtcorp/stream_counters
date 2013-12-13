@@ -46,6 +46,7 @@ module StreamCounters
       @dimensions.each do |d|
         hash['dimensions'][d.keys.join(" ")] = d.to_h
       end
+      hash.merge!(super) if defined?(super)
       hash
     end
 
@@ -78,6 +79,7 @@ module StreamCounters
           options['boxed_segments'][bs['name']] = BoxedSegment.new(bs)
         end if dimension['boxed_segments']
         @dimensions << Dimension.new(*dimension['keys'], options)
+        super(hash) if defined?(super)
       end
     end
   end

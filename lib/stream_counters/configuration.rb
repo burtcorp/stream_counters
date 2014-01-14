@@ -9,11 +9,11 @@ module StreamCounters
       if args.length == 1 && args.first.is_a?(Hash)
         deserialize(args.first)
       else
-        base_keys, metrics, dimensions, context = args
+        base_keys, metrics, dimensions, dsl_context = args
         @base_keys = base_keys.map(&:to_s)
         @metrics = metrics
         @dimensions = dimensions
-        @context = context
+        @context = dsl_context
       end
     end
     

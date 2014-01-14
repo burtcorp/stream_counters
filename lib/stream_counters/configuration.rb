@@ -79,8 +79,8 @@ module StreamCounters
           options['boxed_segments'][bs['name']] = BoxedSegment.new(bs)
         end if dimension['boxed_segments']
         @dimensions << Dimension.new(*dimension['keys'], options)
-        super(hash) if defined?(super)
       end
+      super(hash) if defined?(super)
     end
   end
 end

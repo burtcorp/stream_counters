@@ -215,6 +215,64 @@ module StreamCounters
         config.find_dimension('boxed_dimension').boxed_segments.should == subject.find_dimension('boxed_dimension').boxed_segments
       end
     end
+
+    context 'extension' do
+      module ConfigDslExtension
+        def stuff(*values)
+          if values.empty?
+            @stuff
+          else
+            @stuff = values
+          end
+        end
+      end
+
+      module ConfigExtension
+        def stuff
+          @stuff ||= @context.stuff
+        end
+
+        def to_h
+          {
+            'stuff' => stuff
+          }
+        end
+
+        def deserialize(hash)
+          @stuff = hash['stuff']
+        end
+      end
+
+      class StreamCounters::ConfigurationDsl::DslSupport::ConfigurationContext
+        include ConfigDslExtension
+      end
+
+      class StreamCounters::Configuration
+        include ConfigExtension
+      end
+
+      subject do
+        configuration do
+          base_keys :key1
+          dimension :dim1
+          metric :metric1
+          stuff 1, 2, 3
+        end
+      end
+
+      it 'sends dsl context to Configuration on creation allowing extensions' do
+        subject.stuff.should == [1, 2, 3]
+      end
+
+      it 'allows extension of to_h' do
+        subject.to_h['stuff'].should == [1, 2, 3]
+      end
+
+      it 'allows extension of deserialize' do
+        config = Configuration.new(subject.to_h)
+        config.stuff.should == [1, 2, 3]
+      end
+    end
   
     context 'merging' do
       subject do

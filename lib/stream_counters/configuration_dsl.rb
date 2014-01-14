@@ -58,7 +58,7 @@ module StreamCounters
           @dimensions = if @prototype 
             @prototype.dimensions.map do |d| 
               metrics = d.metrics.reject { |name, m| @metrics.key?(name) }
-              DimensionContext.new(*d.keys, 'meta' => d.meta, 'metrics' => metrics, 'base_keys' => @base_keys)
+              DimensionContext.new(*d.keys.dup, 'meta' => d.meta, 'metrics' => metrics, 'base_keys' => @base_keys)
             end
           else
             []

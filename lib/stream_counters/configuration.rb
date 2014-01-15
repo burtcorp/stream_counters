@@ -9,10 +9,11 @@ module StreamCounters
       if args.length == 1 && args.first.is_a?(Hash)
         deserialize(args.first)
       else
-        base_keys, metrics, dimensions = args
-        @base_keys = base_keys
+        base_keys, metrics, dimensions, dsl_context = args
+        @base_keys = base_keys.map(&:to_s)
         @metrics = metrics
         @dimensions = dimensions
+        @context = dsl_context
       end
     end
     
@@ -23,9 +24,13 @@ module StreamCounters
     def create_counters(options={})
       Counters.new(self, options)
     end
+
+    def create_exploder(options={})
+      Exploder.new(self, options)
+    end
     
     def validate_class(cls)
-      (necessary_methods - cls.instance_methods).sort
+      (necessary_methods - cls.instance_methods.map(&:to_s)).sort
     end
     
     def validate_class!(cls)
@@ -34,13 +39,14 @@ module StreamCounters
     end
     
     def to_h
-      hash = {:base_keys => @base_keys.to_a, :metrics => {}, :dimensions => {}}
+      hash = {'base_keys' => @base_keys.to_a, 'metrics' => {}, 'dimensions' => {}}
       @metrics.each do |k, m|
-        hash[:metrics][k] = m.to_h
+        hash['metrics'][k] = m.to_h
       end
       @dimensions.each do |d|
-        hash[:dimensions][d.keys.join(" ")] = d.to_h
+        hash['dimensions'][d.keys.join(" ")] = d.to_h
       end
+      hash.merge!(super) if defined?(super)
       hash
     end
 
@@ -58,22 +64,23 @@ module StreamCounters
     end
     
     def deserialize(hash)
-      @base_keys = Keys.new(*hash[:base_keys])
+      @base_keys = Keys.new(*hash['base_keys'])
       @metrics = {}
       @dimensions = []
-      hash[:metrics].each do |key, metric|
+      hash['metrics'].each do |key, metric|
         @metrics[key] = Metric.new(metric)
       end
-      hash[:dimensions].each do |key, dimension|
-        options = {:meta => dimension[:meta], :base_keys => dimension[:base_keys], :metrics => {}, :boxed_segments => {}}
-        dimension[:metrics].each do |mk, m|
-          options[:metrics][mk] = Metric.new(m)
+      hash['dimensions'].each do |key, dimension|
+        options = {'meta' => dimension['meta'], 'base_keys' => dimension['base_keys'], 'metrics' => {}, 'boxed_segments' => {}}
+        dimension['metrics'].each do |mk, m|
+          options['metrics'][mk] = Metric.new(m)
         end
-        dimension[:boxed_segments].each do |bs|
-          options[:boxed_segments][bs[:name]] = BoxedSegment.new(bs)
-        end if dimension[:boxed_segments]
-        @dimensions << Dimension.new(*dimension[:keys], options)
+        dimension['boxed_segments'].each do |bs|
+          options['boxed_segments'][bs['name']] = BoxedSegment.new(bs)
+        end if dimension['boxed_segments']
+        @dimensions << Dimension.new(*dimension['keys'], options)
       end
+      super(hash) if defined?(super)
     end
   end
 end

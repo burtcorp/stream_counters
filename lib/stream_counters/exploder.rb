@@ -13,7 +13,13 @@ module StreamCounters
       return {} if check_nils(base_key_pairs, @config.base_keys)
       @config.dimensions.each_with_object({}) do |dimension, segments|
         segment = base_key_pairs.dup
-        dimension.keys.each { |k| segment[k] = item[k] }
+        dimension.keys.each do |k|
+          if box_segment = dimension.boxed_segments[k]
+            segment[k] = box_segment.box(item[box_segment.metric])
+          else
+            segment[k] = item[k]
+          end
+        end
         next if dimension.discard_nil_segments && check_nils(segment, dimension.keys)
         dimension.meta.each { |m| segment[m] = item[m] }
         dimension.metrics.each { |m, metric| segment[m] = calculate_metric(dimension, metric, item) || default_value(dimension, metric) }

@@ -97,6 +97,20 @@ module StreamCounters
       end
     end
 
+    let :config_with_boxing do
+      configuration do
+        base_keys :xyz
+        dimension :boxed_number do
+          boxed_segment :boxed_number, :number, [1, 5, 10]
+        end
+        dimension :def, :boxed_number do
+          boxed_segment :boxed_number, :number, [1, 5, 10]
+        end
+        metric :some_sum, :some_count
+        metric :another_sum, :another_number
+      end
+    end
+
     describe '#explode' do
       it 'explodes an item into segment operations' do
         item = {'xyz' => 'first', 'abc' => 'hello', 'def' => 'foo', 'some_count' => 1, 'another_number' =>  3}
@@ -232,6 +246,52 @@ module StreamCounters
             third_dim => [{'xyz' => 'first', 'def' => nil, 'some_sum' => 1, 'another_sum' => 1}]
           }
           result4.should == {}
+        end
+      end
+
+      context 'when boxing keys' do
+        before do
+          @exploder = Exploder.new(config_with_boxing)
+
+        end
+
+        it 'handles a single key dimension' do
+          item1 = {'xyz' => 'first', 'def' => 'second', 'number' => 0.5, 'some_count' => 1, 'another_number' => 0}
+          item2 = {'xyz' => 'first', 'def' => 'second', 'number' => 2, 'some_count' => 1, 'another_number' => 1}
+          item3 = {'xyz' => 'first', 'def' => 'third', 'number' => 6, 'some_count' => 0, 'another_number' => 1}
+          item4 = {'xyz' => 'second', 'def' => 'first', 'number' => 11, 'some_count' => 1, 'another_number' => 1}
+          dim = config_with_boxing.find_dimension('boxed_number')
+          result1 = @exploder.explode(item1)
+          result2 = @exploder.explode(item2)
+          result3 = @exploder.explode(item3)
+          result4 = @exploder.explode(item4)
+          result1[dim].should == [{'xyz' => 'first', 'boxed_number' => 1, 'some_sum' => 1, 'another_sum' => 0}]
+          result2[dim].should == [{'xyz' => 'first', 'boxed_number' => 1, 'some_sum' => 1, 'another_sum' => 1}]
+          result3[dim].should == [{'xyz' => 'first', 'boxed_number' => 5, 'some_sum' => 0, 'another_sum' => 1}]
+          result4[dim].should == [{'xyz' => 'second', 'boxed_number' => 10, 'some_sum' => 1, 'another_sum' => 1}]
+        end
+
+        it 'overrides already present values on boxed key destination' do
+          item = {'xyz' => 'first', 'def' => 'second', 'number' => 7, 'boxed_number' => 7, 'some_count' => 1, 'another_number' => 1}
+          result = @exploder.explode(item)
+          dim = config_with_boxing.find_dimension('boxed_number')
+          result[dim].should == [{'xyz' => 'first', 'boxed_number' => 5, 'some_sum' => 1, 'another_sum' => 1}]
+        end
+
+        it 'handles multi key dimensions' do
+          item1 = {'xyz' => 'first', 'def' => 'second', 'number' => 0.5, 'some_count' => 1, 'another_number' => 0}
+          item2 = {'xyz' => 'first', 'def' => 'second', 'number' => 2, 'some_count' => 1, 'another_number' => 1}
+          item3 = {'xyz' => 'first', 'def' => 'third', 'number' => 6, 'some_count' => 0, 'another_number' => 1}
+          item4 = {'xyz' => 'second', 'def' => 'first', 'number' => 11, 'some_count' => 1, 'another_number' => 1}
+          dim = config_with_boxing.find_dimension('boxed_number', 'def')
+          result1 = @exploder.explode(item1)
+          result2 = @exploder.explode(item2)
+          result3 = @exploder.explode(item3)
+          result4 = @exploder.explode(item4)
+          result1[dim].should == [{'xyz' => 'first', 'def' => 'second', 'boxed_number' => 1, 'some_sum' => 1, 'another_sum' => 0}]
+          result2[dim].should == [{'xyz' => 'first', 'def' => 'second', 'boxed_number' => 1, 'some_sum' => 1, 'another_sum' => 1}]
+          result3[dim].should == [{'xyz' => 'first', 'def' => 'third', 'boxed_number' => 5, 'some_sum' => 0, 'another_sum' => 1}]
+          result4[dim].should == [{'xyz' => 'second', 'def' => 'first', 'boxed_number' => 10, 'some_sum' => 1, 'another_sum' => 1}]
         end
       end
 

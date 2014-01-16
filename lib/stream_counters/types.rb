@@ -40,9 +40,10 @@ module StreamCounters
     end
     alias_method :to_a, :to_ary
     
-    def to_s
-      @s ||= %|#{self.class.name.split(':').last}([#{@elements.map(&:inspect).join(', ')}])|
+    def inspect
+      @i ||= %|#{self.class.name.split(':').last}([#{@elements.map(&:inspect).join(', ')}])|
     end
+    alias_method :to_s, :inspect
   end
   
   class Keys < ImmutableList
@@ -55,11 +56,11 @@ module StreamCounters
     def initialize(*args)
       @options = if args.last.is_a?(Hash) then args.pop else {} end
       super(*args)
-      @meta = (@options[:meta] || []).freeze
-      @metrics = (@options[:metrics] || {}).freeze
-      @base_keys = (@options[:base_keys] || []).freeze
-      @boxed_segments = (@options[:boxed_segments] || []).freeze
-      @discard_nil_segments = (@options[:discard_nil_segments] || false).freeze
+      @meta = (@options['meta'] || []).map(&:to_s).freeze
+      @metrics = (@options['metrics'] || {}).freeze
+      @base_keys = (@options['base_keys'].map(&:to_s) || []).freeze
+      @boxed_segments = (@options['boxed_segments'] || []).freeze
+      @discard_nil_segments = (@options['discard_nil_segments'] || false).freeze
     end
     
     def eql?(other)
@@ -74,20 +75,21 @@ module StreamCounters
       @hash ||= HashCalculator.hash(@meta, @metrics)
     end
     
-    def to_s
-      @s ||= %|#{self.class.name.split(':').last}(keys: [#{keys.map(&:inspect).join(', ')}], meta: [#{meta.map(&:inspect).join(', ')}], metrics: [#{metrics.values.map(&:inspect).join(', ')}])|
+    def inspect
+      @i ||= %|#{self.class.name.split(':').last}(keys: [#{keys.map(&:inspect).join(', ')}], meta: [#{meta.map(&:inspect).join(', ')}], metrics: [#{metrics.values.map(&:inspect).join(', ')}])|
     end
+    alias_method :to_s, :inspect
 
     def to_h
-      hash = {:keys => keys, :base_keys => @base_keys, :metrics => {}}
+      hash = {'keys' => keys, 'base_keys' => @base_keys, 'metrics' => {}}
       @metrics.each do |k, m|
-        hash[:metrics][k] = m.to_h
+        hash['metrics'][k] = m.to_h
       end
       unless @meta.empty?
-        hash[:meta] = @meta
+        hash['meta'] = @meta
       end
       unless @boxed_segments.empty?
-        hash[:boxed_segments] = @boxed_segments.is_a?(Hash) ? @boxed_segments.values.map(&:to_h) :  @boxed_segments
+        hash['boxed_segments'] = @boxed_segments.is_a?(Hash) ? @boxed_segments.values.map(&:to_h) :  @boxed_segments
       end
       hash.merge!(super) if defined?(super)
       hash
@@ -95,7 +97,7 @@ module StreamCounters
   end
   
   class Metric
-    DEFAULT_TYPE = :numeric
+    DEFAULT_TYPE = 'numeric'
     DEFAULT_VALUE = 0
     DEFAULT_IF_MESSAGE = nil
     DEFAULT_IF_WITH_CONTEXT = nil
@@ -105,12 +107,12 @@ module StreamCounters
     def initialize(*args)
       if args.length == 1 && args.first.is_a?(Hash)
         hash = args.first
-        name = hash[:name]
-        message = hash[:message] || name
-        type = hash[:type] || DEFAULT_TYPE
-        default = hash[:default] || DEFAULT_VALUE
-        if_message = hash[:if_message] || DEFAULT_IF_MESSAGE
-        if_with_context = hash[:if_with_context] || DEFAULT_IF_WITH_CONTEXT
+        name = hash['name']
+        message = hash['message']
+        type = hash['type'] || DEFAULT_TYPE
+        default = hash['default'] || DEFAULT_VALUE
+        if_message = hash['if_message'] || DEFAULT_IF_MESSAGE
+        if_with_context = hash['if_with_context'] || DEFAULT_IF_WITH_CONTEXT
       else
         name, message, type, default, if_message, if_with_context = args
         type ||= DEFAULT_TYPE
@@ -118,6 +120,12 @@ module StreamCounters
         if_message ||= DEFAULT_IF_MESSAGE
         if_with_context ||= DEFAULT_IF_WITH_CONTEXT
       end
+      message ||= name
+      name = name.to_s if name
+      message = message.to_s if message
+      type = type.to_s if type
+      if_message = if_message.to_s if if_message
+      if_with_context = if_with_context.to_s if if_with_context
       @name, @message, @type, @default, @if_message, @if_with_context = name, message || name, type, default, if_message, if_with_context
     end
     
@@ -130,13 +138,14 @@ module StreamCounters
       @hash ||= HashCalculator.hash(@name, @message, @type, @default, @if_message, @if_with_context)
     end
     
-    def to_s
-      @s ||= %|#{self.class.name.split(':').last}(name: #{name.inspect}, message: #{message.inspect}, type: #{type.inspect}, default: #{default.inspect}, if_message: #{if_message.inspect}, if_with_context: #{if_with_context.inspect})|
+    def inspect
+      @i ||= %|#{self.class.name.split(':').last}(name: #{name.inspect}, message: #{message.inspect}, type: #{type.inspect}, default: #{default.inspect}, if_message: #{if_message.inspect}, if_with_context: #{if_with_context.inspect})|
     end
+    alias_method :to_s, :inspect
 
     def to_h
-      hash = {:name => @name, :message => @message, :type => @type, :default => @default, :if_message => @if_message}
-      hash.delete :default if @default.is_a?(Proc)
+      hash = {'name' => @name, 'message' => @message, 'type' => @type, 'default' => @default, 'if_message' => @if_message}
+      hash.delete 'default' if @default.is_a?(Proc)
       hash
     end
   end
@@ -147,16 +156,16 @@ module StreamCounters
     def initialize(*args)
       if args.length == 1 && args.first.is_a?(Hash)
         hash = args.first
-        name = hash[:name]
-        metric = hash[:metric]
-        boxes = hash[:boxes]
-        scale = hash[:scale]
+        name = hash['name']
+        metric = hash['metric']
+        boxes = hash['boxes']
+        scale = hash['scale']
       else
         name, metric, boxes, args = args
         scale = args[:scale] if args && args[:scale]
       end
-      @name = name
-      @metric = metric
+      @name = name.to_s
+      @metric = metric.to_s
       @boxes = boxes || []
       @scale = scale || 1
     end
@@ -178,11 +187,11 @@ module StreamCounters
 
     def to_h
       hash = {
-        :name => @name,
-        :metric => @metric,
-        :boxes => @boxes,
+        'name' => @name,
+        'metric' => @metric,
+        'boxes' => @boxes,
       }
-      hash[:scale] = @scale if @scale != 1
+      hash['scale'] = @scale if @scale != 1
       hash
     end
   end

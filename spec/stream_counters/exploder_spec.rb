@@ -283,7 +283,7 @@ module StreamCounters
           item2 = {'xyz' => 'first', 'def' => 'second', 'number' => 2, 'some_count' => 1, 'another_number' => 1}
           item3 = {'xyz' => 'first', 'def' => 'third', 'number' => 6, 'some_count' => 0, 'another_number' => 1}
           item4 = {'xyz' => 'second', 'def' => 'first', 'number' => 11, 'some_count' => 1, 'another_number' => 1}
-          dim = config_with_boxing.find_dimension('boxed_number', 'def')
+          dim = config_with_boxing.find_dimension('def', 'boxed_number')
           result1 = @exploder.explode(item1)
           result2 = @exploder.explode(item2)
           result3 = @exploder.explode(item3)

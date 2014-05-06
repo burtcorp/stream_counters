@@ -63,14 +63,31 @@ module StreamCounters
         subject.find_dimension('dimension_1', 'dimension_2').should_not be_nil
       end
       
-      it 'sorts the dimension property names in alphabetical order' do
+      it 'keeps the dimension property names in the specified order' do
         config = ConfigurationDsl.configuration do
           base_keys :x
           dimension :b, :a
         end
-        config.dimensions.first.keys.should == ['a', 'b']
+        config.dimensions.first.keys.should == ['b', 'a']
       end
       
+      it 'allows for dimensions with same keys in different orders' do
+        config = ConfigurationDsl.configuration do
+          base_keys :x
+          dimension :b, :a do
+            meta :x
+          end
+          dimension :a, :b do
+            meta :y
+          end
+        end
+        config.dimensions.length.should == 2
+        config.dimensions.first.keys.should == ['b', 'a']
+        config.dimensions.first.meta.should == ['x']
+        config.dimensions.last.keys.should == ['a', 'b']
+        config.dimensions.last.meta.should == ['y']
+      end
+
       it 'captures dimensions (with meta)' do
         dimension = subject.find_dimension('dimension_3')
         dimension.meta.should == ['meta_1', 'meta_2']
@@ -115,11 +132,11 @@ module StreamCounters
       end
 
       it 'handles settings for combination of non-boxed and boxed segments' do
-        dimension = subject.find_dimension('boxed_dimension', 'dimension_1')
+        dimension = subject.find_dimension('dimension_1', 'boxed_dimension')
         dimension.boxed_segments.should == {
           'boxed_dimension' => BoxedSegment.new(:boxed_dimension, :boxing_metric, [1, 5, 10, 20])
         }
-        dimension.keys.should == ['boxed_dimension', 'dimension_1']
+        dimension.keys.should == ['dimension_1', 'boxed_dimension']
       end
     end
 

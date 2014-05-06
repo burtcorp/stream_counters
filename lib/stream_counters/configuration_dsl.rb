@@ -109,7 +109,7 @@ module StreamCounters
       
         def initialize(*args)
           options = if args.last.is_a?(Hash) then args.pop else {} end
-          @keys = (args.map(&:to_s) || []).sort
+          @keys = (args.map(&:to_s) || [])
           @meta = options.fetch('meta', [])
           @metrics = options.fetch('metrics', {})
           @base_keys = options.fetch('base_keys', [])

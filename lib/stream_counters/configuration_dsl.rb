@@ -129,15 +129,12 @@ module StreamCounters
         end
 
         def discard_nil_segments(*args)
-          if args.empty?
-          then @discard_nil_segments
+          return @discard_nil_segments if args.empty?
+          @discard_nil_segments = case args.first
+          when true,false
+            args.first
           else
-            @discard_nil_segments = case args.first
-            when TrueClass,FalseClass
-              args.first
-            else
-              args.map(&:to_s)
-            end
+            args.map(&:to_s)
           end
         end
       end

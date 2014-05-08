@@ -97,6 +97,23 @@ module StreamCounters
       end
     end
 
+    let :config_with_discard_nil_abc do
+      configuration do
+        base_keys :xyz
+        dimension :abc do
+          discard_nil_segments true
+        end
+        dimension :abc, :def do
+          discard_nil_segments :abc
+        end
+        dimension :def do
+          discard_nil_segments false
+        end
+        metric :some_sum, :some_count
+        metric :another_sum, :another_number
+      end
+    end
+
     let :config_with_boxing do
       configuration do
         base_keys :xyz
@@ -240,6 +257,35 @@ module StreamCounters
           }
           result2.should == {
             first_dim  => [{'xyz' => 'first', 'abc' => 'hello',              'some_sum' => 1, 'another_sum' => 0}],
+            third_dim  => [{'xyz' => 'first',                  'def' => nil, 'some_sum' => 1, 'another_sum' => 0}]
+          }
+          result3.should == {
+            third_dim => [{'xyz' => 'first', 'def' => nil, 'some_sum' => 1, 'another_sum' => 1}]
+          }
+          result4.should == {}
+        end
+
+        it 'does not return segments where discard_nil_segments is array with keys to discard and a value for one of the specified segment keys is nil' do
+          exploder = Exploder.new(config_with_discard_nil_abc)
+          first_dim = config_with_discard_nil.find_dimension('abc')
+          second_dim = config_with_discard_nil.find_dimension('abc', 'def')
+          third_dim = config_with_discard_nil.find_dimension('def')
+          item1 = {'xyz' => 'first', 'abc' => 'hello', 'def' => 'foo', 'some_count' => 1, 'another_number' => 0}
+          item2 = {'xyz' => 'first', 'abc' => 'hello', 'def' => nil,   'some_count' => 1, 'another_number' => 0}
+          item3 = {'xyz' => 'first', 'abc' => nil,     'def' => nil,   'some_count' => 1, 'another_number' => 1}
+          item4 = {'xyz' => nil,     'abc' => 'hello', 'def' => 'foo', 'some_count' => 1, 'another_number' => 1}
+          result1 = exploder.explode(item1)
+          result2 = exploder.explode(item2)
+          result3 = exploder.explode(item3)
+          result4 = exploder.explode(item4)
+          result1.should == {
+            first_dim  => [{'xyz' => 'first', 'abc' => 'hello',                'some_sum' => 1, 'another_sum' => 0}],
+            second_dim => [{'xyz' => 'first', 'abc' => 'hello', 'def' => 'foo', 'some_sum' => 1, 'another_sum' => 0}],
+            third_dim  => [{'xyz' => 'first',                  'def' => 'foo', 'some_sum' => 1, 'another_sum' => 0}]
+          }
+          result2.should == {
+            first_dim  => [{'xyz' => 'first', 'abc' => 'hello',              'some_sum' => 1, 'another_sum' => 0}],
+            second_dim => [{'xyz' => 'first', 'abc' => 'hello', 'def' => nil,'some_sum' => 1, 'another_sum' => 0}],
             third_dim  => [{'xyz' => 'first',                  'def' => nil, 'some_sum' => 1, 'another_sum' => 0}]
           }
           result3.should == {

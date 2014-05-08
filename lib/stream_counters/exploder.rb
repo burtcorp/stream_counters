@@ -20,7 +20,8 @@ module StreamCounters
             segment[k] = item[k]
           end
         end
-        next if dimension.discard_nil_segments && check_nils(segment, dimension.keys)
+        discard_keys = dimension.discard_nil_segments.is_a?(Array) ? dimension.discard_nil_segments : dimension.keys
+        next if dimension.discard_nil_segments && check_nils(segment, discard_keys)
         dimension.meta.each { |m| segment[m] = item[m] }
         dimension.metrics.each { |m, metric| segment[m] = calculate_metric(dimension, metric, item) || default_value(dimension, metric) }
         permuted_segments = permute_segment(dimension, segment)
